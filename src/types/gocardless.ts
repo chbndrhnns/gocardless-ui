@@ -5,7 +5,7 @@ export interface Requisition {
   institution_id: string;
   agreement: string;
   reference: string;
-  accounts: string[];
+  accounts: string[] | BankAccount[];
   user_language: string;
   link: string;
   ssn: string | null;
@@ -27,24 +27,21 @@ export interface TokenResponse {
 
 export interface BankAccount {
   id: string;
-  created_at: string;
-  account_holder_name: string;
-  account_number_ending: string;
-  bank_name: string;
-  currency: string;
+  created: string;
+  last_accessed: string;
+  iban: string;
+  institution_id: string;
   status: string;
-  metadata: Record<string, string>;
+  owner_name: string;
+  currency: string;
+  balance: {
+    amount: string;
+    currency: string;
+  };
 }
 
-export interface AccountsResponse {
-  bank_accounts: BankAccount[];
-  meta: {
-    cursors: {
-      before: string | null;
-      after: string | null;
-    };
-    limit: number;
-  };
+export interface RequisitionDetails extends Requisition {
+  accounts: BankAccount[];
 }
 
 export interface Institution {

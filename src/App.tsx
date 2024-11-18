@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { RequisitionCard } from './components/RequisitionCard';
 import { AddBankDialog } from './components/AddBankDialog';
