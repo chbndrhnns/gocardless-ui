@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { RequisitionCard } from './components/RequisitionCard';
 import { AddBankDialog } from './components/AddBankDialog';
-import { fetchRequisitions, fetchInstitutions } from './services/api';
+import { fetchRequisitions, fetchInstitutions, createRequisition } from './services/api';
 import type { Requisition, Institution } from './types/gocardless';
 
 function App() {
@@ -14,6 +14,7 @@ function App() {
   const [selectedCountry, setSelectedCountry] = useState('de');
   const [isLoadingInstitutions, setIsLoadingInstitutions] = useState(false);
   const [institutionsError, setInstitutionsError] = useState<string | null>(null);
+  const [isCreatingRequisition, setIsCreatingRequisition] = useState(false);
 
   const loadRequisitions = async () => {
     setIsLoading(true);
@@ -47,9 +48,33 @@ function App() {
     window.open(link, '_blank');
   };
 
-  const handleInstitutionSelect = (institution: Institution) => {
-    console.log('Selected institution:', institution);
-    // We'll implement the next step in the following implementation
+  const handleInstitutionSelect = async (institution: Institution) => {
+    setIsCreatingRequisition(true);
+    try {
+      const redirectUrl = `${window.location.origin}/callback`;
+      const reference = `REQ-${Date.now()}`;
+      const requisition = await createRequisition({
+        institutionId: institution.id,
+        redirectUrl,
+        reference,
+        userLanguage: selectedCountry.toUpperCase(),
+      });
+
+      // Add the new requisition to the list
+      setRequisitions((prev) => [requisition, ...prev]);
+      
+      // Close the dialog
+      setIsDialogOpen(false);
+
+      // Redirect to the bank's page
+      if (requisition.link) {
+        window.location.href = requisition.link;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create bank connection');
+    } finally {
+      setIsCreatingRequisition(false);
+    }
   };
 
   const handleCountryChange = (country: string) => {
@@ -139,6 +164,7 @@ function App() {
           onInstitutionSelect={handleInstitutionSelect}
           selectedCountry={selectedCountry}
           onCountryChange={handleCountryChange}
+          isCreatingRequisition={isCreatingRequisition}
         />
       </div>
     </div>

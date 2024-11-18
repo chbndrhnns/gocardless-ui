@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Search, ChevronRight } from 'lucide-react';
+import { X, Search, ChevronRight, Loader2 } from 'lucide-react';
 import type { Institution } from '../types/gocardless';
 
 interface AddBankDialogProps {
@@ -11,6 +11,7 @@ interface AddBankDialogProps {
   onInstitutionSelect: (institution: Institution) => void;
   selectedCountry: string;
   onCountryChange: (country: string) => void;
+  isCreatingRequisition: boolean;
 }
 
 const COUNTRIES = [
@@ -30,6 +31,7 @@ export function AddBankDialog({
   onInstitutionSelect,
   selectedCountry,
   onCountryChange,
+  isCreatingRequisition,
 }: AddBankDialogProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -46,7 +48,8 @@ export function AddBankDialog({
           <h2 className="text-2xl font-semibold text-gray-900">Connect Your Bank</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 transition-colors"
+            disabled={isCreatingRequisition}
+            className="text-gray-400 hover:text-gray-500 transition-colors disabled:opacity-50"
           >
             <X className="w-6 h-6" />
           </button>
@@ -57,7 +60,8 @@ export function AddBankDialog({
             <select
               value={selectedCountry}
               onChange={(e) => onCountryChange(e.target.value)}
-              className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              disabled={isCreatingRequisition}
+              className="block w-48 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50"
             >
               {COUNTRIES.map((country) => (
                 <option key={country.code} value={country.code}>
@@ -73,7 +77,8 @@ export function AddBankDialog({
                 placeholder="Search banks..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                disabled={isCreatingRequisition}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
               />
             </div>
           </div>
@@ -97,6 +102,11 @@ export function AddBankDialog({
                   </div>
                 ))}
               </div>
+            ) : isCreatingRequisition ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <p className="text-gray-600">Creating bank connection...</p>
+              </div>
             ) : filteredInstitutions.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">No banks found matching your search.</p>
@@ -107,7 +117,8 @@ export function AddBankDialog({
                   <button
                     key={institution.id}
                     onClick={() => onInstitutionSelect(institution)}
-                    className="w-full flex items-center p-4 rounded-lg hover:bg-gray-50 transition-colors group"
+                    disabled={isCreatingRequisition}
+                    className="w-full flex items-center p-4 rounded-lg hover:bg-gray-50 transition-colors group disabled:opacity-50"
                   >
                     <img
                       src={institution.logo}
