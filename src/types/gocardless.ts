@@ -46,3 +46,14 @@ export interface AccountsResponse {
     limit: number;
   };
 }
+
+export interface Institution {
+  id: string;
+  name: string;
+  bic: string;
+  transaction_total_days: number;
+  countries: string[];
+  logo: string;
+}
+
+export type InstitutionsResponse = Institution[];

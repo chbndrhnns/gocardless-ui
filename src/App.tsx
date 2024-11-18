@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { RequisitionCard } from './components/RequisitionCard';
-import { fetchRequisitions } from './services/api';
-import type { Requisition } from './types/gocardless';
+import { AddBankDialog } from './components/AddBankDialog';
+import { fetchRequisitions, fetchInstitutions } from './services/api';
+import type { Requisition, Institution } from './types/gocardless';
 
 function App() {
   const [requisitions, setRequisitions] = useState<Requisition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState('de');
+  const [isLoadingInstitutions, setIsLoadingInstitutions] = useState(false);
+  const [institutionsError, setInstitutionsError] = useState<string | null>(null);
 
   const loadRequisitions = async () => {
     setIsLoading(true);
@@ -23,19 +29,43 @@ function App() {
     }
   };
 
+  const loadInstitutions = async (country: string) => {
+    setIsLoadingInstitutions(true);
+    setInstitutionsError(null);
+    
+    try {
+      const data = await fetchInstitutions(country);
+      setInstitutions(data);
+    } catch (err) {
+      setInstitutionsError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoadingInstitutions(false);
+    }
+  };
+
   const handleLinkClick = (link: string) => {
     window.open(link, '_blank');
   };
 
-  const handleNewConnection = () => {
-    // This would typically initiate a new requisition
-    // We'll implement this in the next step
-    console.log('Starting new connection...');
+  const handleInstitutionSelect = (institution: Institution) => {
+    console.log('Selected institution:', institution);
+    // We'll implement the next step in the following implementation
+  };
+
+  const handleCountryChange = (country: string) => {
+    setSelectedCountry(country);
+    loadInstitutions(country);
   };
 
   useEffect(() => {
     loadRequisitions();
   }, []);
+
+  useEffect(() => {
+    if (isDialogOpen) {
+      loadInstitutions(selectedCountry);
+    }
+  }, [isDialogOpen, selectedCountry]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -57,7 +87,7 @@ function App() {
                 Refresh
               </button>
               <button
-                onClick={handleNewConnection}
+                onClick={() => setIsDialogOpen(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
@@ -99,6 +129,17 @@ function App() {
             ))}
           </div>
         )}
+
+        <AddBankDialog
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          institutions={institutions}
+          isLoading={isLoadingInstitutions}
+          error={institutionsError}
+          onInstitutionSelect={handleInstitutionSelect}
+          selectedCountry={selectedCountry}
+          onCountryChange={handleCountryChange}
+        />
       </div>
     </div>
   );
