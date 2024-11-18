@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { RequisitionCard } from './components/RequisitionCard';
 import { AddBankDialog } from './components/AddBankDialog';
-import { fetchRequisitions, fetchInstitutions, createRequisition } from './services/api';
+import { fetchRequisitions, fetchInstitutions, createRequisition, deleteRequisition } from './services/api';
 import type { Requisition, Institution } from './types/gocardless';
 
 function App() {
@@ -15,6 +15,7 @@ function App() {
   const [isLoadingInstitutions, setIsLoadingInstitutions] = useState(false);
   const [institutionsError, setInstitutionsError] = useState<string | null>(null);
   const [isCreatingRequisition, setIsCreatingRequisition] = useState(false);
+  const [isDeletingRequisition, setIsDeletingRequisition] = useState<string | null>(null);
 
   const loadRequisitions = async () => {
     setIsLoading(true);
@@ -74,6 +75,18 @@ function App() {
       setError(err instanceof Error ? err.message : 'Failed to create bank connection');
     } finally {
       setIsCreatingRequisition(false);
+    }
+  };
+
+  const handleDeleteRequisition = async (id: string) => {
+    setIsDeletingRequisition(id);
+    try {
+      await deleteRequisition(id);
+      setRequisitions((prev) => prev.filter((req) => req.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete bank connection');
+    } finally {
+      setIsDeletingRequisition(null);
     }
   };
 
@@ -150,6 +163,8 @@ function App() {
                 key={requisition.id}
                 requisition={requisition}
                 onLinkClick={handleLinkClick}
+                onDelete={handleDeleteRequisition}
+                isDeleting={isDeletingRequisition === requisition.id}
               />
             ))}
           </div>

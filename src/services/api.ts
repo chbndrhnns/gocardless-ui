@@ -23,6 +23,26 @@ export async function fetchRequisitions(): Promise<RequisitionsResponse> {
   }
 }
 
+export async function deleteRequisition(id: string): Promise<void> {
+  try {
+    const accessToken = await authService.getAccessToken();
+    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/${id}/`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(accessToken),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
+      );
+    }
+  } catch (error) {
+    console.error('Error deleting requisition:', error);
+    throw error;
+  }
+}
+
 export async function fetchRequisitionDetails(id: string): Promise<RequisitionDetails> {
   try {
     const accessToken = await authService.getAccessToken();

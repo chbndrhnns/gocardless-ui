@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Building2, Calendar, Link, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Building2, Calendar, Link, ChevronDown, ChevronUp, Loader2, Trash2 } from 'lucide-react';
 import { RequisitionStatus } from './RequisitionStatus';
 import { AccountsList } from './AccountsList';
 import { fetchRequisitionDetails } from '../services/api';
@@ -9,13 +9,16 @@ import type { Requisition, RequisitionDetails } from '../types/gocardless';
 interface RequisitionCardProps {
   requisition: Requisition;
   onLinkClick: (link: string) => void;
+  onDelete: (id: string) => void;
+  isDeleting: boolean;
 }
 
-export function RequisitionCard({ requisition, onLinkClick }: RequisitionCardProps) {
+export function RequisitionCard({ requisition, onLinkClick, onDelete, isDeleting }: RequisitionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [details, setDetails] = useState<RequisitionDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const loadDetails = async () => {
     if (!isExpanded || details) return;
@@ -37,6 +40,15 @@ export function RequisitionCard({ requisition, onLinkClick }: RequisitionCardPro
     loadDetails();
   }, [isExpanded]);
 
+  const handleDelete = () => {
+    if (showDeleteConfirm) {
+      onDelete(requisition.id);
+      setShowDeleteConfirm(false);
+    } else {
+      setShowDeleteConfirm(true);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
       <div className="p-6">
@@ -47,7 +59,24 @@ export function RequisitionCard({ requisition, onLinkClick }: RequisitionCardPro
               {requisition.institution_id}
             </h3>
           </div>
-          <RequisitionStatus status={requisition.status} />
+          <div className="flex items-center space-x-2">
+            <RequisitionStatus status={requisition.status} />
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className={`p-1.5 rounded-full transition-colors ${
+                showDeleteConfirm
+                  ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                  : 'text-gray-400 hover:text-red-600 hover:bg-gray-100'
+              } disabled:opacity-50`}
+            >
+              {isDeleting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Trash2 className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
         
         <div className="space-y-3">
@@ -68,6 +97,20 @@ export function RequisitionCard({ requisition, onLinkClick }: RequisitionCardPro
         </div>
         
         <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">
+          {showDeleteConfirm && (
+            <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
+              Are you sure? This will permanently delete this connection.
+              {!isDeleting && (
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="ml-2 text-red-600 hover:text-red-800 font-medium"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
+
           {requisition.link && (
             <button
               onClick={() => onLinkClick(requisition.link)}
