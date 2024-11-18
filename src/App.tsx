@@ -20,7 +20,7 @@ function App() {
   const loadRequisitions = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const data = await fetchRequisitions();
       setRequisitions(data.results);
@@ -34,7 +34,7 @@ function App() {
   const loadInstitutions = async (country: string) => {
     setIsLoadingInstitutions(true);
     setInstitutionsError(null);
-    
+
     try {
       const data = await fetchInstitutions(country);
       setInstitutions(data);
@@ -61,13 +61,9 @@ function App() {
         userLanguage: selectedCountry.toUpperCase(),
       });
 
-      // Add the new requisition to the list
       setRequisitions((prev) => [requisition, ...prev]);
-      
-      // Close the dialog
       setIsDialogOpen(false);
 
-      // Redirect to the bank's page
       if (requisition.link) {
         window.location.href = requisition.link;
       }
@@ -105,84 +101,122 @@ function App() {
     }
   }, [isDialogOpen, selectedCountry]);
 
+  const completedRequisitions = requisitions.filter(req => req.status === 'CR' || req.status === 'LN');
+  const problematicRequisitions = requisitions.filter(req => req.status !== 'CR' && req.status !== 'LN');
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Bank Connections</h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Manage your bank account connections and view their status
-              </p>
-            </div>
-            <div className="flex space-x-4">
-              <button
-                onClick={loadRequisitions}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </button>
-              <button
-                onClick={() => setIsDialogOpen(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                New Connection
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="space-y-3">
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                </div>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Bank Connections</h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  Manage your bank account connections and view their status
+                </p>
               </div>
-            ))}
+              <div className="flex space-x-4">
+                <button
+                    onClick={loadRequisitions}
+                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </button>
+                <button
+                    onClick={() => setIsDialogOpen(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  New Connection
+                </button>
+              </div>
+            </div>
           </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-            {error}
-          </div>
-        ) : requisitions.length === 0 ? (
-          <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900">No bank connections found</h3>
-            <p className="mt-2 text-gray-500">Start by connecting your first bank account.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {requisitions.map((requisition) => (
-              <RequisitionCard
-                key={requisition.id}
-                requisition={requisition}
-                onLinkClick={handleLinkClick}
-                onDelete={handleDeleteRequisition}
-                isDeleting={isDeletingRequisition === requisition.id}
-              />
-            ))}
-          </div>
-        )}
 
-        <AddBankDialog
-          isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
-          institutions={institutions}
-          isLoading={isLoadingInstitutions}
-          error={institutionsError}
-          onInstitutionSelect={handleInstitutionSelect}
-          selectedCountry={selectedCountry}
-          onCountryChange={handleCountryChange}
-          isCreatingRequisition={isCreatingRequisition}
-        />
+          {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[...Array(3)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                      <div className="space-y-3">
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                      </div>
+                    </div>
+                ))}
+              </div>
+          ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+                {error}
+              </div>
+          ) : requisitions.length === 0 ? (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-gray-900">No bank connections found</h3>
+                <p className="mt-2 text-gray-500">Start by connecting your first bank account.</p>
+              </div>
+          ) : (
+              <div className="space-y-8">
+                {completedRequisitions.length > 0 && (
+                    <section>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Connections</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {completedRequisitions.map((requisition) => (
+                            <RequisitionCard
+                                key={requisition.id}
+                                requisition={requisition}
+                                onLinkClick={handleLinkClick}
+                                onDelete={handleDeleteRequisition}
+                                isDeleting={isDeletingRequisition === requisition.id}
+                            />
+                        ))}
+                      </div>
+                    </section>
+                )}
+
+                {problematicRequisitions.length > 0 && (
+                    <section>
+                      <h2 className="text-lg font-semibold text-gray-900 mb-4">Pending or Problematic Connections</h2>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {problematicRequisitions.map((requisition) => (
+                            <div key={requisition.id} className="bg-white rounded-lg shadow-md p-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-medium text-gray-900">Connection {requisition.id}</h3>
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                          {requisition.status}
+                        </span>
+                              </div>
+                              <p className="text-gray-500 mb-4">
+                                This connection is in a pending or problematic state and may need to be recreated.
+                              </p>
+                              <button
+                                  onClick={() => handleDeleteRequisition(requisition.id)}
+                                  disabled={isDeletingRequisition === requisition.id}
+                                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                              >
+                                {isDeletingRequisition === requisition.id ? 'Deleting...' : 'Delete Connection'}
+                              </button>
+                            </div>
+                        ))}
+                      </div>
+                    </section>
+                )}
+              </div>
+          )}
+
+          <AddBankDialog
+              isOpen={isDialogOpen}
+              onClose={() => setIsDialogOpen(false)}
+              institutions={institutions}
+              isLoading={isLoadingInstitutions}
+              error={institutionsError}
+              onInstitutionSelect={handleInstitutionSelect}
+              selectedCountry={selectedCountry}
+              onCountryChange={handleCountryChange}
+              isCreatingRequisition={isCreatingRequisition}
+          />
+        </div>
       </div>
-    </div>
   );
 }
 
