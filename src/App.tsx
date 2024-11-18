@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { PlusCircle, RefreshCw } from 'lucide-react';
 import { RequisitionCard } from './components/RequisitionCard';
 import { AddBankDialog } from './components/AddBankDialog';
-import { fetchRequisitions, fetchInstitutions, createRequisition, deleteRequisition } from './services/api';
-import type { Requisition, Institution } from './types/gocardless';
+import { fetchRequisitions, fetchInstitutions, createRequisition, deleteRequisition, fetchRequisitionDetails } from './services/api';
+import type { Requisition, Institution, RequisitionDetails } from './types/gocardless';
 
 function App() {
   const [requisitions, setRequisitions] = useState<Requisition[]>([]);
+  const [requisitionDetails, setRequisitionDetails] = useState<Record<string, RequisitionDetails>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -23,11 +24,31 @@ function App() {
 
     try {
       const data = await fetchRequisitions();
-      setRequisitions(data.results);
+      const sortedRequisitions = data.results.sort((a, b) =>
+          new Date(a.created).getTime() - new Date(b.created).getTime()
+      );
+      setRequisitions(sortedRequisitions);
+
+      // Start loading details for all requisitions in the background
+      sortedRequisitions.forEach(req => {
+        loadRequisitionDetails(req.id);
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadRequisitionDetails = async (requisitionId: string) => {
+    try {
+      const details = await fetchRequisitionDetails(requisitionId);
+      setRequisitionDetails(prev => ({
+        ...prev,
+        [requisitionId]: details
+      }));
+    } catch (error) {
+      console.error(`Error loading details for requisition ${requisitionId}:`, error);
     }
   };
 
@@ -61,7 +82,9 @@ function App() {
         userLanguage: selectedCountry.toUpperCase(),
       });
 
-      setRequisitions((prev) => [requisition, ...prev]);
+      setRequisitions(prev => [requisition, ...prev].sort((a, b) =>
+          new Date(a.created).getTime() - new Date(b.created).getTime()
+      ));
       setIsDialogOpen(false);
 
       if (requisition.link) {
@@ -78,7 +101,12 @@ function App() {
     setIsDeletingRequisition(id);
     try {
       await deleteRequisition(id);
-      setRequisitions((prev) => prev.filter((req) => req.id !== id));
+      setRequisitions(prev => prev.filter(req => req.id !== id));
+      setRequisitionDetails(prev => {
+        const updated = { ...prev };
+        delete updated[id];
+        return updated;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete bank connection');
     } finally {
@@ -165,6 +193,7 @@ function App() {
                             <RequisitionCard
                                 key={requisition.id}
                                 requisition={requisition}
+                                details={requisitionDetails[requisition.id]}
                                 onLinkClick={handleLinkClick}
                                 onDelete={handleDeleteRequisition}
                                 isDeleting={isDeletingRequisition === requisition.id}
