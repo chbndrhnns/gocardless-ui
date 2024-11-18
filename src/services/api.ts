@@ -1,6 +1,6 @@
 import { API_CONFIG, getAuthHeaders } from '../config/api';
 import { authService } from './auth';
-import type { RequisitionsResponse, Institution, InstitutionsResponse, Requisition, RequisitionDetails } from '../types/gocardless';
+import type { RequisitionsResponse, Institution, InstitutionsResponse, Requisition, RequisitionDetails, BankAccount } from '../types/gocardless';
 
 export async function fetchRequisitions(): Promise<RequisitionsResponse> {
   try {
@@ -19,6 +19,27 @@ export async function fetchRequisitions(): Promise<RequisitionsResponse> {
     return response.json();
   } catch (error) {
     console.error('Error fetching requisitions:', error);
+    throw error;
+  }
+}
+
+export async function fetchAccountDetails(accountId: string): Promise<BankAccount> {
+  try {
+    const accessToken = await authService.getAccessToken();
+    const response = await fetch(`${API_CONFIG.baseUrl}/accounts/${accountId}/`, {
+      headers: getAuthHeaders(accessToken),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching account details:', error);
     throw error;
   }
 }
@@ -57,7 +78,17 @@ export async function fetchRequisitionDetails(id: string): Promise<RequisitionDe
       );
     }
 
-    return response.json();
+    const requisition = await response.json();
+    
+    // Fetch details for each account
+    const accountDetails = await Promise.all(
+      requisition.accounts.map((accountId: string) => fetchAccountDetails(accountId))
+    );
+    
+    return {
+      ...requisition,
+      accounts: accountDetails,
+    };
   } catch (error) {
     console.error('Error fetching requisition details:', error);
     throw error;

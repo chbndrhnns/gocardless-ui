@@ -28,7 +28,7 @@ export function AccountsList({ accounts }: AccountsListProps) {
               <h4 className="font-medium text-gray-900">{account.owner_name}</h4>
             </div>
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              account.status === 'enabled' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              account.status === 'READY' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
             }`}>
               {account.status}
             </span>
@@ -46,21 +46,6 @@ export function AccountsList({ accounts }: AccountsListProps) {
                 Last accessed {format(new Date(account.last_accessed), 'MMM d, yyyy')}
               </span>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Balance</p>
-              <p className="text-lg font-semibold text-gray-900">
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: account.balance.currency,
-                }).format(parseFloat(account.balance.amount))}
-              </p>
-            </div>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-              View Transactions
-            </button>
           </div>
         </div>
       ))}
