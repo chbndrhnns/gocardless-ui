@@ -1,14 +1,13 @@
 export const API_CONFIG = {
-  baseUrl: `/api`,
+  baseUrl: 'http://localhost:3000/api',
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   },
 } as const;
 
-export function getAuthHeaders(token?: string) {
+export function getAuthHeaders() {
   return {
     ...API_CONFIG.headers,
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
   };
 }

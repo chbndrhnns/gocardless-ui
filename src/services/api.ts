@@ -1,21 +1,15 @@
-import { API_CONFIG, getAuthHeaders } from '../config/api';
-import { authService } from './auth';
+import { API_CONFIG } from '../config/api';
 import type { RequisitionsResponse, Institution, InstitutionsResponse, Requisition, RequisitionDetails, BankAccount } from '../types/gocardless';
 
 export async function fetchRequisitions(): Promise<RequisitionsResponse> {
   try {
-    const accessToken = await authService.getAccessToken();
-    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/`, {
-      headers: getAuthHeaders(accessToken),
-    });
-
+    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        errorData?.message || `API error: ${response.status} ${response.statusText}`
+          errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
-
     return response.json();
   } catch (error) {
     console.error('Error fetching requisitions:', error);
@@ -25,18 +19,13 @@ export async function fetchRequisitions(): Promise<RequisitionsResponse> {
 
 export async function fetchAccountDetails(accountId: string): Promise<BankAccount> {
   try {
-    const accessToken = await authService.getAccessToken();
-    const response = await fetch(`${API_CONFIG.baseUrl}/accounts/${accountId}/`, {
-      headers: getAuthHeaders(accessToken),
-    });
-
+    const response = await fetch(`${API_CONFIG.baseUrl}/accounts/${accountId}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        errorData?.message || `API error: ${response.status} ${response.statusText}`
+          errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
-
     return response.json();
   } catch (error) {
     console.error('Error fetching account details:', error);
@@ -46,16 +35,13 @@ export async function fetchAccountDetails(accountId: string): Promise<BankAccoun
 
 export async function deleteRequisition(id: string): Promise<void> {
   try {
-    const accessToken = await authService.getAccessToken();
-    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/${id}/`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/${id}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(accessToken),
     });
-
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        errorData?.message || `API error: ${response.status} ${response.statusText}`
+          errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
   } catch (error) {
@@ -66,29 +52,14 @@ export async function deleteRequisition(id: string): Promise<void> {
 
 export async function fetchRequisitionDetails(id: string): Promise<RequisitionDetails> {
   try {
-    const accessToken = await authService.getAccessToken();
-    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/${id}/`, {
-      headers: getAuthHeaders(accessToken),
-    });
-
+    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/${id}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        errorData?.message || `API error: ${response.status} ${response.statusText}`
+          errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
-
-    const requisition = await response.json();
-    
-    // Fetch details for each account
-    const accountDetails = await Promise.all(
-      requisition.accounts.map((accountId: string) => fetchAccountDetails(accountId))
-    );
-    
-    return {
-      ...requisition,
-      accounts: accountDetails,
-    };
+    return response.json();
   } catch (error) {
     console.error('Error fetching requisition details:', error);
     throw error;
@@ -97,18 +68,13 @@ export async function fetchRequisitionDetails(id: string): Promise<RequisitionDe
 
 export async function fetchInstitutions(country: string): Promise<Institution[]> {
   try {
-    const accessToken = await authService.getAccessToken();
-    const response = await fetch(`${API_CONFIG.baseUrl}/institutions/?country=${country}`, {
-      headers: getAuthHeaders(accessToken),
-    });
-
+    const response = await fetch(`${API_CONFIG.baseUrl}/institutions?country=${country}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        errorData?.message || `API error: ${response.status} ${response.statusText}`
+          errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
-
     const data: InstitutionsResponse = await response.json();
     return data;
   } catch (error) {
@@ -124,10 +90,9 @@ export async function createRequisition(params: {
   userLanguage: string;
 }): Promise<Requisition> {
   try {
-    const accessToken = await authService.getAccessToken();
-    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions`, {
       method: 'POST',
-      headers: getAuthHeaders(accessToken),
+      headers: API_CONFIG.headers,
       body: JSON.stringify({
         institution_id: params.institutionId,
         redirect: params.redirectUrl,
@@ -139,7 +104,7 @@ export async function createRequisition(params: {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-        errorData?.message || `API error: ${response.status} ${response.statusText}`
+          errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
 
