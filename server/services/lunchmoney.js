@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { env } from '../config/env.js';
 import { readLinks, writeLinks } from './storage.js';
 
@@ -13,15 +12,17 @@ async function getLunchmoneyHeaders() {
 
 export async function getAssets() {
   try {
-    const response = await axios.get(`${LUNCHMONEY_API_URL}/assets`, {
+    const response = await fetch(`${LUNCHMONEY_API_URL}/assets`, {
+      method: 'GET',
       headers: await getLunchmoneyHeaders(),
     });
+    const jsonResponse = await response.json();
 
     // Get linked accounts to add linking information
     const { links } = await readLinks();
 
     // Add linked status to each asset
-    const assetsWithLinks = response.data.assets.map(asset => ({
+    const assetsWithLinks = jsonResponse.assets.map(asset => ({
       ...asset,
       linked_account: links.find(link => link.lunchmoneyId === asset.id)?.gocardlessId || null
     }));
