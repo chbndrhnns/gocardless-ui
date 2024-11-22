@@ -5,6 +5,7 @@ import { router as authRouter } from './routes/auth.js';
 import { router as requisitionsRouter } from './routes/requisitions.js';
 import { router as institutionsRouter } from './routes/institutions.js';
 import { router as accountsRouter } from './routes/accounts.js';
+import { router as lunchmoneyRouter } from './routes/lunchmoney.js';
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use('/api/auth', authRouter);
 app.use('/api/requisitions', requisitionsRouter);
 app.use('/api/institutions', institutionsRouter);
 app.use('/api/accounts', accountsRouter);
+app.use('/api/lunchmoney', lunchmoneyRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
