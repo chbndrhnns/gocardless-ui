@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoCardless to Lunch Money Sync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">GoCardless to Lunch Money Sync</h1>
+        <div id="accountList" class="space-y-4">
+            <!-- Account list will be populated here -->
+        </div>
+    </div>
+
+    <script>
+        function loadAccounts() {
+            fetch('/api/accounts')
+                .then(response => response.json())
+                .then(data => {
+                    const accountList = document.getElementById('accountList');
+                    accountList.innerHTML = '';
+                    data.accounts.forEach(account => {
+                        const accountDiv = document.createElement('div');
+                        accountDiv.className = 'bg-white p-4 rounded shadow';
+                        accountDiv.innerHTML = `
+                            <h2 class="text-xl font-semibold">${account.gocardlessName} (${account.gocardlessId})</h2>
+                            <p>Lunch Money: ${account.lunchmoneyName} (ID: ${account.lunchmoneyId})</p>
+                            <p>Last Sync: ${data.lastSync}</p>
+                            <button onclick="syncAccount('${account.gocardlessId}')" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded">
+                                Sync Now
+                            </button>
+                        `;
+                        accountList.appendChild(accountDiv);
+                    });
+                });
+        }
+
+        function syncAccount(accountId) {
+            fetch('/api/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ accountId: accountId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Sync triggered successfully');
+                    loadAccounts();
+                } else {
+                    alert('Error triggering sync');
+                }
+            });
+        }
+
+        loadAccounts();
+        setInterval(loadAccounts, 60000);  // Refresh every minute
+    </script>
+</body>
+</html>
+
