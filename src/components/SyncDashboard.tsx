@@ -2,15 +2,7 @@ import { useState, useEffect } from 'react';
 import { Play, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import type { SyncStatus } from '../types/sync';
-import {API_CONFIG} from "../config/api.ts";
-
-const defaultSyncStatus = {
-  lastSyncStatus: 'unknown', // or any meaningful default status
-  lastSync: null,
-  nextSync: null,
-  lastSyncTransactions: 0,
-  isSyncing: false,
-};
+import { API_CONFIG } from "../config/api";
 
 export function SyncDashboard() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus[]>([]);
@@ -28,13 +20,7 @@ export function SyncDashboard() {
       const response = await fetch(`${API_CONFIG.baseUrl}/sync/status`);
       if (!response.ok) throw new Error('Failed to fetch sync status');
       const data = await response.json();
-
-      const updatedAccounts = data.accounts.map((account: Partial<SyncStatus>) => ({
-      ...defaultSyncStatus,
-      ...account,
-    }));
-
-      setSyncStatus(updatedAccounts);
+      setSyncStatus(data.accounts);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
