@@ -4,16 +4,16 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 
-from server.routes.sync import sync_bp
+from server.routes.sync_routes import sync_bp
 from server.services.sync_service import (
     get_token_storage,
     schedule_sync,
 )
-from .routes.accounts import accounts_bp
-from .routes.auth import auth_bp
-from .routes.institutions import institutions_bp
-from .routes.lunchmoney import lunchmoney_bp
-from .routes.requisitions import requisitions_bp
+from .routes.accounts_routes import accounts_bp
+from .routes.auth_routes import auth_bp
+from .routes.institutions_routes import institutions_bp
+from .routes.lunchmoney_routes import lunchmoney_bp
+from .routes.requisitions_routes import requisitions_bp
 
 # Load environment variables
 load_dotenv()
