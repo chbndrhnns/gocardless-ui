@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Play, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { Play, Loader2, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
+import { format, formatDistanceToNow, formatDistance } from 'date-fns';
 import type { SyncStatus } from '../types/sync';
 import { API_CONFIG } from "../config/api";
 
@@ -111,18 +111,38 @@ export function SyncDashboard() {
                   </p>
                 </div>
               )}
+
+              <div className="pt-2 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">API Rate Limits</p>
+                  {account.rateLimit.remaining < account.rateLimit.limit * 0.2 && (
+                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                  )}
+                </div>
+                <p className="text-sm text-gray-900">
+                  {account.rateLimit.remaining} / {account.rateLimit.limit} remaining
+                </p>
+                <p className="text-xs text-gray-500">
+                  Resets in {formatDistance(new Date(account.rateLimit.reset), new Date(), { addSuffix: true })}
+                </p>
+              </div>
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-100">
               <button
                 onClick={() => triggerSync(account.gocardlessId)}
-                disabled={account.isSyncing}
+                disabled={account.isSyncing || (account.rateLimit.limit > 0 && account.rateLimit.remaining === 0)}
                 className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
                 {account.isSyncing ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Syncing...
+                  </>
+                ) : (account.rateLimit.limit > 0 && account.rateLimit.remaining === 0) ? (
+                  <>
+                    <AlertTriangle className="h-4 w-4 mr-2" />
+                    Rate Limited
                   </>
                 ) : (
                   <>

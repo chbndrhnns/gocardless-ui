@@ -21,7 +21,7 @@ def get_sync_status():
 
     status_list = []
     for account in accounts:
-        status = get_account_status(account["gocardlessId"])
+        status = get_account_status(account["gocardlessId"], access_token)
         status_list.append(
             {
                 "gocardlessId": account["gocardlessId"],

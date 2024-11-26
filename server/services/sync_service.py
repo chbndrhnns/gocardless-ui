@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import httpx
 from flask.cli import load_dotenv
@@ -26,7 +26,7 @@ LUNCHMONEY_API_URL = "https://dev.lunchmoney.app/v1"
 LUNCHMONEY_API_KEY = os.environ.get("LUNCHMONEY_ACCESS_TOKEN")
 ACCOUNT_LINKS_FILE = Path(project_dir / "server" / "data" / "account-links.json")
 SYNC_STATUS_FILE = Path(project_dir / "server" / "data" / "sync-status.json")
-HTTP_REQUEST_TIMEOUT = 30.0
+HTTP_REQUEST_TIMEOUT = 30
 
 
 class TokenStorage:
@@ -38,6 +38,18 @@ class TokenStorage:
 @lru_cache
 def get_token_storage() -> TokenStorage:
     return TokenStorage()
+
+
+def extract_rate_limits(headers: httpx.Headers) -> Dict:
+    logger.info(headers)
+    return {
+        "limit": int(headers.get("x-ratelimit-account-success-limit", 0)),
+        "remaining": int(headers.get("x-ratelimit-account-success-remaining", 0)),
+        "reset": headers.get(
+            "x-ratelimit-account-success-reset",
+            (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
+        ),
+    }
 
 
 def load_account_links() -> List[Dict]:
@@ -95,7 +107,9 @@ def get_gocardless_token(token_storage: TokenStorage) -> str:
     return token_storage.gocardless_token
 
 
-def get_gocardless_account_name(account_id: str, access_token: str) -> str:
+def get_gocardless_account_details(
+    account_id: str, access_token: str
+) -> Tuple[Dict, Dict]:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -103,7 +117,12 @@ def get_gocardless_account_name(account_id: str, access_token: str) -> str:
         url, headers=headers, follow_redirects=True, timeout=HTTP_REQUEST_TIMEOUT
     )
     response.raise_for_status()
-    account_data = response.json()
+    rate_limits = extract_rate_limits(response.headers)
+    return response.json(), rate_limits
+
+
+def get_gocardless_account_name(account_id: str, access_token: str) -> str:
+    account_data, _ = get_gocardless_account_details(account_id, access_token)
     return account_data.get("iban", "Unknown Account")
 
 
@@ -125,7 +144,7 @@ def get_lunchmoney_account_name(account_id: int) -> str:
     return "Unknown Account"
 
 
-def get_account_status(account_id: str) -> Dict:
+def get_account_status(account_id: str, access_token: str) -> Dict:
     sync_status = load_sync_status()
     account_status = sync_status.get(account_id, {})
 
@@ -137,7 +156,11 @@ def get_account_status(account_id: str) -> Dict:
             "isSyncing": False,
         }
 
+    # Get fresh rate limits
+    _, rate_limits = get_gocardless_account_details(account_id, access_token)
+    account_status["rateLimit"] = rate_limits
     account_status["nextSync"] = get_next_sync_time()
+
     return account_status
 
 
@@ -164,6 +187,9 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
         save_sync_status(sync_status)
 
         try:
+            # Get fresh rate limits before sync
+            _, rate_limits = get_gocardless_account_details(account_id, access_token)
+
             # Perform sync logic here
             # For now, we'll just simulate a successful sync
             sync_status[account_id].update(
@@ -172,6 +198,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
                     "lastSyncStatus": "success",
                     "lastSyncTransactions": 5,  # Example value
                     "isSyncing": False,
+                    "rateLimit": rate_limits,
                 }
             )
         except Exception as e:

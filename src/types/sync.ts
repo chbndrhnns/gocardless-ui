@@ -1,3 +1,9 @@
+export interface RateLimit {
+  limit: number;
+  remaining: number;
+  reset: string;
+}
+
 export interface SyncStatus {
   gocardlessId: string;
   gocardlessName: string;
@@ -7,4 +13,5 @@ export interface SyncStatus {
   lastSyncStatus: 'success' | 'error' | 'pending' | null;
   lastSyncTransactions: number;
   isSyncing: boolean;
+  rateLimit: RateLimit;
 }

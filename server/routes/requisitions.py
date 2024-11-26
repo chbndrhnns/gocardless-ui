@@ -10,7 +10,7 @@ from ..services.requisitions import (
 requisitions_bp = Blueprint("requisitions", __name__)
 
 
-@requisitions_bp.route("", methods=["GET"])
+@requisitions_bp.route("/", methods=["GET"])
 async def list_requisitions():
     try:
         requisitions = await get_requisitions()
@@ -28,7 +28,7 @@ async def get_details(id):
         return jsonify({"error": str(e)}), 500
 
 
-@requisitions_bp.route("", methods=["POST"])
+@requisitions_bp.route("/", methods=["POST"])
 async def create():
     try:
         requisition = await create_new_requisition(request.json)
