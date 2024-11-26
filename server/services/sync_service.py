@@ -41,15 +41,15 @@ def get_token_storage() -> TokenStorage:
 
 
 def extract_rate_limits(headers: httpx.Headers) -> Dict:
-    logger.info(headers)
-    return {
-        "limit": int(headers.get("x-ratelimit-account-success-limit", 0)),
-        "remaining": int(headers.get("x-ratelimit-account-success-remaining", 0)),
-        "reset": headers.get(
-            "x-ratelimit-account-success-reset",
-            (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat(),
-        ),
+    reset_in_mins = int(headers.get("http_x_ratelimit_reset", 0))
+    delta = timedelta(minutes=reset_in_mins) if reset_in_mins else timedelta(hours=24)
+    reset_timestamp = (datetime.now(timezone.utc) + delta).isoformat()
+    rate_limits = {
+        "limit": int(headers.get("http_x_ratelimit_limit", 0)),
+        "remaining": int(headers.get("http_x_ratelimit_remaining", 0)),
+        "reset": reset_timestamp,
     }
+    return rate_limits
 
 
 def load_account_links() -> List[Dict]:
