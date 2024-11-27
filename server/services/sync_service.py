@@ -9,14 +9,14 @@ from typing import List, Dict, Tuple
 import httpx
 from flask.cli import load_dotenv
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
 project_dir = Path(__file__).parents[2]
 load_dotenv(os.path.join(project_dir, ".env"))
+
+# Set up logging
+logging.basicConfig(
+    level=os.getenv("BACKEND_LOG_LEVEL"), format="%(asctime)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 # Configuration
 GOCARDLESS_API_URL = "https://bankaccountdata.gocardless.com/api/v2"
@@ -52,12 +52,17 @@ def extract_rate_limits(headers: httpx.Headers) -> Dict:
     return rate_limits
 
 
-def load_account_links() -> List[Dict]:
+def load_account_links(account_id=None) -> List[Dict]:
     if not ACCOUNT_LINKS_FILE.exists():
         return []
     with open(ACCOUNT_LINKS_FILE, mode="r") as f:
         content = f.read()
-        return json.loads(content)["links"]
+        links = json.loads(content)["links"]
+
+        if account_id:
+            links = [link for link in links if link["gocardlessId"] == account_id]
+
+        return links
 
 
 def load_sync_status() -> Dict:
@@ -85,9 +90,9 @@ def get_next_sync_time() -> str:
 
 def get_gocardless_token(token_storage: TokenStorage) -> str:
     if (
-        token_storage.gocardless_token
-        and token_storage.token_expiry
-        and datetime.now(timezone.utc) < token_storage.token_expiry
+            token_storage.gocardless_token
+            and token_storage.token_expiry
+            and datetime.now(timezone.utc) < token_storage.token_expiry
     ):
         return token_storage.gocardless_token
 
@@ -108,7 +113,7 @@ def get_gocardless_token(token_storage: TokenStorage) -> str:
 
 
 def get_gocardless_account_details(
-    account_id: str, access_token: str
+        account_id: str, access_token: str
 ) -> Tuple[Dict, Dict]:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -165,18 +170,21 @@ def get_account_status(account_id: str, access_token: str) -> Dict:
 
 
 def sync_transactions(token_storage: TokenStorage, account_id=None):
-    account_links = load_account_links()
+    account_links = load_account_links(account_id)
     sync_status = load_sync_status()
-
-    if account_id:
-        account_links = [
-            link for link in account_links if link["gocardlessId"] == account_id
-        ]
+    now = datetime.now(timezone.utc)
 
     access_token = get_gocardless_token(token_storage)
 
     for link in account_links:
         account_id = link["gocardlessId"]
+        logging.info(f"Fetching transactions for account {account_id}")
+
+        from_date = (
+            (datetime.fromisoformat(link.get("lastSync", now.isoformat())) - timedelta(days=5))
+            .date()
+            .isoformat()
+        )
 
         # Update sync status
         if account_id not in sync_status:
@@ -189,29 +197,101 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
         try:
             # Get fresh rate limits before sync
             _, rate_limits = get_gocardless_account_details(account_id, access_token)
+            gocardless_data = get_gocardless_transactions(
+                link["gocardlessId"], from_date, access_token
+            )
 
-            # Perform sync logic here
+            all_transactions = []
+            for tx_type in ["booked", "pending"]:
+                transformed_transactions = [
+                    transform_transaction(tx, link["lunchmoneyId"], tx_type)
+                    for tx in gocardless_data.get(tx_type, [])
+                ]
+                all_transactions.extend(transformed_transactions)
+
+            try:
+                result = send_to_lunchmoney(all_transactions)
+                logging.info(
+                    f"Synced {len(all_transactions)} transactions for account {link['gocardlessId']}. Lunch Money response: {result}"
+                )
+            except Exception as e:
+                logging.error(
+                    f"Error sending transactions to Lunch Money for account {link['gocardlessId']}: {str(e)}"
+                )
+
             # For now, we'll just simulate a successful sync
             sync_status[account_id].update(
                 {
                     "lastSync": datetime.now(timezone.utc).isoformat(),
                     "lastSyncStatus": "success",
-                    "lastSyncTransactions": 5,  # Example value
+                    "lastSyncTransactions": len(
+                        transformed_transactions
+                    ),  # Example value
                     "isSyncing": False,
                     "rateLimit": rate_limits,
                 }
+            )
+            logging.info(
+                f"Fetched {len(transformed_transactions)} transactions for account {link['gocardlessId']}"
             )
         except Exception as e:
             logger.error(f"Sync failed for account {account_id}: {str(e)}")
             sync_status[account_id].update(
                 {
-                    "lastSync": datetime.now(timezone.utc).isoformat(),
+                    "lastSync": now.isoformat(),
                     "lastSyncStatus": "error",
                     "isSyncing": False,
                 }
             )
 
         save_sync_status(sync_status)
+
+
+def get_gocardless_transactions(
+        account_id: str, from_date: str, access_token: str
+) -> Dict:
+    url = f"{GOCARDLESS_API_URL}/accounts/{account_id}/transactions"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"date_from": from_date}
+
+    response = httpx.get(url, headers=headers, params=params, follow_redirects=True)
+    response.raise_for_status()
+    result = response.json()["transactions"]
+    logger.debug(f"Received transactions for account {account_id}: {result}")
+    return result
+
+
+def send_to_lunchmoney(transactions: List[Dict]) -> Dict:
+    url = f"{LUNCHMONEY_API_URL}/transactions"
+    headers = {
+        "Authorization": f"Bearer {LUNCHMONEY_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    data = {"transactions": transactions, "check_for_recurring": True}
+    logger.debug(f"Sending transactions to Lunch Money: {data}")
+    response = httpx.post(url, headers=headers, json=data)
+    response.raise_for_status()
+    return response.json()
+
+
+def transform_transaction(
+        gocardless_tx: Dict, lunchmoney_account_id: int, tx_type: str
+) -> Dict:
+    logger.debug(f"Transforming transaction: {gocardless_tx}")
+    parsed = {
+        "date": datetime.fromisoformat(gocardless_tx["bookingDate"]).date().isoformat(),
+        "amount": f"{abs(float(gocardless_tx['transactionAmount']['amount'])):.4f}",
+        "currency": (gocardless_tx["transactionAmount"]["currency"]).lower(),
+        "payee": gocardless_tx.get(
+            "merchantName", gocardless_tx.get("debtorName", "Unknown")
+        ),
+        "notes": gocardless_tx.get("remittanceInformationUnstructured", ""),
+        "account_id": lunchmoney_account_id,
+        "external_id": gocardless_tx["transactionId"],
+        "status": "uncleared",
+    }
+    logger.debug(f"Transformed transaction: {parsed}")
+    return parsed
 
 
 def schedule_sync(token_storage: TokenStorage):
