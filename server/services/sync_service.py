@@ -14,7 +14,8 @@ load_dotenv(os.path.join(project_dir, ".env"))
 
 # Set up logging
 logging.basicConfig(
-    level=os.getenv("BACKEND_LOG_LEVEL"), format="%(asctime)s - %(levelname)s - %(message)s"
+    level=os.getenv("BACKEND_LOG_LEVEL"),
+    format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -90,9 +91,9 @@ def get_next_sync_time() -> str:
 
 def get_gocardless_token(token_storage: TokenStorage) -> str:
     if (
-            token_storage.gocardless_token
-            and token_storage.token_expiry
-            and datetime.now(timezone.utc) < token_storage.token_expiry
+        token_storage.gocardless_token
+        and token_storage.token_expiry
+        and datetime.now(timezone.utc) < token_storage.token_expiry
     ):
         return token_storage.gocardless_token
 
@@ -113,7 +114,7 @@ def get_gocardless_token(token_storage: TokenStorage) -> str:
 
 
 def get_gocardless_account_details(
-        account_id: str, access_token: str
+    account_id: str, access_token: str
 ) -> Tuple[Dict, Dict]:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -181,7 +182,10 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
         logging.info(f"Fetching transactions for account {account_id}")
 
         from_date = (
-            (datetime.fromisoformat(link.get("lastSync", now.isoformat())) - timedelta(days=5))
+            (
+                datetime.fromisoformat(link.get("lastSync", now.isoformat()))
+                - timedelta(days=5)
+            )
             .date()
             .isoformat()
         )
@@ -204,7 +208,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
             all_transactions = []
             for tx_type in ["booked", "pending"]:
                 transformed_transactions = [
-                    transform_transaction(tx, link["lunchmoneyId"], tx_type)
+                    transform_transaction(tx, link["lunchmoneyId"])
                     for tx in gocardless_data.get(tx_type, [])
                 ]
                 all_transactions.extend(transformed_transactions)
@@ -248,7 +252,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
 
 
 def get_gocardless_transactions(
-        account_id: str, from_date: str, access_token: str
+    account_id: str, from_date: str, access_token: str
 ) -> Dict:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}/transactions"
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -274,9 +278,7 @@ def send_to_lunchmoney(transactions: List[Dict]) -> Dict:
     return response.json()
 
 
-def transform_transaction(
-        gocardless_tx: Dict, lunchmoney_account_id: int, tx_type: str
-) -> Dict:
+def transform_transaction(gocardless_tx: Dict, lunchmoney_account_id: int) -> Dict:
     logger.debug(f"Transforming transaction: {gocardless_tx}")
     parsed = {
         "date": datetime.fromisoformat(gocardless_tx["bookingDate"]).date().isoformat(),
