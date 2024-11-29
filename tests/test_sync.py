@@ -3,8 +3,7 @@ import pytest
 from server.services.sync_service import sync_transactions, get_token_storage
 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_():
-    sync_transactions(
-        get_token_storage(), account_id="33e12209-1d5f-4b55-b072-3db812417b89"
-    )
+    account_id = "ac39208d-b0ad-4fde-9374-e099de0ff38a"
+    sync_transactions(get_token_storage(), account_id=account_id)

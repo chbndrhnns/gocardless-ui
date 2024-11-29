@@ -42,12 +42,12 @@ def get_token_storage() -> TokenStorage:
 
 
 def extract_rate_limits(headers: httpx.Headers) -> Dict:
-    reset_in_mins = int(headers.get("http_x_ratelimit_reset", 0))
+    reset_in_mins = int(headers.get("HTTP_X_RATELIMIT_ACCOUNT_SUCCESS_RESET", 0))
     delta = timedelta(minutes=reset_in_mins) if reset_in_mins else timedelta(hours=24)
     reset_timestamp = (datetime.now(timezone.utc) + delta).isoformat()
     rate_limits = {
-        "limit": int(headers.get("http_x_ratelimit_limit", 0)),
-        "remaining": int(headers.get("http_x_ratelimit_remaining", 0)),
+        "limit": int(headers.get("HTTP_X_RATELIMIT_ACCOUNT_SUCCESS_LIMIT", 0)),
+        "remaining": int(headers.get("HTTP_X_RATELIMIT_ACCOUNT_SUCCESS_REMAINING", 0)),
         "reset": reset_timestamp,
     }
     return rate_limits
@@ -199,9 +199,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
         save_sync_status(sync_status)
 
         try:
-            # Get fresh rate limits before sync
-            _, rate_limits = get_gocardless_account_details(account_id, access_token)
-            gocardless_data = get_gocardless_transactions(
+            gocardless_data, rate_limits = get_gocardless_transactions(
                 link["gocardlessId"], access_token, from_date
             )
 
@@ -254,16 +252,20 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
 
 def get_gocardless_transactions(
     account_id: str, access_token: str, from_date: str, to_date: str = None
-) -> Dict:
+) -> tuple[list, dict]:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}/transactions/"
     headers = {"Authorization": f"Bearer {access_token}"}
     params = {"date_from": from_date} | ({"date_to": to_date} if to_date else {})
 
     response = httpx.get(url, headers=headers, params=params, follow_redirects=True)
     response.raise_for_status()
+
     result = response.json()["transactions"]
     logger.debug(f"Received transactions for account {account_id}: {result}")
-    return result
+
+    # Extract and return rate limits with transactions
+    rate_limits = extract_rate_limits(response.headers)
+    return result, rate_limits
 
 
 def send_to_lunchmoney(transactions: List[Dict]) -> Dict:
