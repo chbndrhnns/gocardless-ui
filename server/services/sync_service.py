@@ -216,7 +216,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
                 all_transactions.extend(transformed_transactions)
 
             try:
-                result = send_to_lunchmoney(all_transactions)
+                result = send_transactions_to_lunchmoney(all_transactions)
                 logging.info(
                     f"Synced {len(all_transactions)} transactions for account {link['gocardlessId']}. Lunch Money response: {result}"
                 )
@@ -269,7 +269,43 @@ def get_gocardless_transactions(
     return result, rate_limits
 
 
-def send_to_lunchmoney(transactions: list[dict]) -> list[dict]:
+def send_transactions_to_lunchmoney(transactions):
+    """Send new transactions to Lunch Money."""
+    # Determine start_date and end_date from transaction batch
+    dates = [tx["date"] for tx in transactions]
+    start_date = min(dates)
+    end_date = max(dates)
+
+    # Fetch existing transactions
+    existing_transactions = fetch_existing_transactions(
+        transactions[0]["asset_id"], start_date, end_date
+    )
+    existing_ids = {tx["external_id"] for tx in existing_transactions}
+
+    # Filter out transactions where external_id matches
+    new_transactions = [
+        tx for tx in transactions if tx["external_id"] not in existing_ids
+    ]
+
+    if not new_transactions:
+        logger.info("No new transactions to send to Lunch Money.")
+        return []
+
+    return send_batch(new_transactions)
+
+
+def fetch_existing_transactions(asset_id, start_date, end_date):
+    """Fetch existing transactions from Lunch Money."""
+    url = f"{LUNCHMONEY_API_URL}/transactions"
+    headers = {"Authorization": f"Bearer {LUNCHMONEY_API_KEY}"}
+    params = {"asset_id": asset_id, "start_date": start_date, "end_date": end_date}
+
+    response = httpx.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    return response.json().get("transactions", [])
+
+
+def send_batch(transactions: list[dict]) -> list[dict]:
     url = f"{LUNCHMONEY_API_URL}/transactions/"
     headers = {
         "Authorization": f"Bearer {LUNCHMONEY_API_KEY}",
