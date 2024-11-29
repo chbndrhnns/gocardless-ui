@@ -296,7 +296,7 @@ def transform_transaction(gocardless_tx: Dict, lunchmoney_account_id: int) -> Di
             "merchantName", gocardless_tx.get("creditorName", "Unknown")
         ).strip(),
         "notes": notes.strip(),
-        "account_id": lunchmoney_account_id,
+        "asset_id": lunchmoney_account_id,
         "external_id": gocardless_tx["internalTransactionId"],
         "status": "uncleared",
     }
