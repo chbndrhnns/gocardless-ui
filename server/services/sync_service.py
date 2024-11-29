@@ -4,7 +4,6 @@ import os
 from datetime import datetime, timezone, timedelta
 from functools import lru_cache
 from pathlib import Path
-from typing import List, Dict, Tuple
 
 import httpx
 from flask.cli import load_dotenv
@@ -18,6 +17,8 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
+logging.getLogger("httpcore").setLevel(logging.INFO)
+logging.getLogger("httpx").setLevel(logging.INFO)
 
 # Configuration
 GOCARDLESS_API_URL = "https://bankaccountdata.gocardless.com/api/v2"
@@ -41,7 +42,7 @@ def get_token_storage() -> TokenStorage:
     return TokenStorage()
 
 
-def extract_rate_limits(headers: httpx.Headers) -> Dict:
+def extract_rate_limits(headers: httpx.Headers) -> dict:
     reset_in_mins = int(headers.get("HTTP_X_RATELIMIT_ACCOUNT_SUCCESS_RESET", 0))
     delta = timedelta(minutes=reset_in_mins) if reset_in_mins else timedelta(hours=24)
     reset_timestamp = (datetime.now(timezone.utc) + delta).isoformat()
@@ -53,10 +54,10 @@ def extract_rate_limits(headers: httpx.Headers) -> Dict:
     return rate_limits
 
 
-def load_account_links(account_id=None) -> List[Dict]:
+def load_account_links(account_id=None) -> list[dict]:
     if not ACCOUNT_LINKS_FILE.exists():
         return []
-    with open(ACCOUNT_LINKS_FILE, mode="r") as f:
+    with open(ACCOUNT_LINKS_FILE) as f:
         content = f.read()
         links = json.loads(content)["links"]
 
@@ -66,14 +67,14 @@ def load_account_links(account_id=None) -> List[Dict]:
         return links
 
 
-def load_sync_status() -> Dict:
+def load_sync_status() -> dict:
     if not SYNC_STATUS_FILE.exists():
         return {}
-    with open(SYNC_STATUS_FILE, "r") as f:
+    with open(SYNC_STATUS_FILE) as f:
         return json.load(f)
 
 
-def save_sync_status(status: Dict):
+def save_sync_status(status: dict):
     SYNC_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(SYNC_STATUS_FILE, "w") as f:
         json.dump(status, f, indent=2)
@@ -115,7 +116,7 @@ def get_gocardless_token(token_storage: TokenStorage) -> str:
 
 def get_gocardless_account_details(
     account_id: str, access_token: str
-) -> Tuple[Dict, Dict]:
+) -> tuple[dict, dict]:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}/"
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -150,7 +151,7 @@ def get_lunchmoney_account_name(account_id: int) -> str:
     return "Unknown Account"
 
 
-def get_account_status(account_id: str, access_token: str) -> Dict:
+def get_account_status(account_id: str, access_token: str) -> dict:
     sync_status = load_sync_status()
     account_status = sync_status.get(account_id, {})
 
@@ -252,7 +253,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
 
 def get_gocardless_transactions(
     account_id: str, access_token: str, from_date: str, to_date: str = None
-) -> tuple[list, dict]:
+) -> tuple[dict, dict]:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}/transactions/"
     headers = {"Authorization": f"Bearer {access_token}"}
     params = {"date_from": from_date} | ({"date_to": to_date} if to_date else {})
@@ -268,25 +269,29 @@ def get_gocardless_transactions(
     return result, rate_limits
 
 
-def send_to_lunchmoney(transactions: List[Dict]) -> Dict:
+def send_to_lunchmoney(transactions: list[dict]) -> list[dict]:
     url = f"{LUNCHMONEY_API_URL}/transactions/"
     headers = {
         "Authorization": f"Bearer {LUNCHMONEY_API_KEY}",
         "Content-Type": "application/json",
     }
-    data = {
-        "transactions": transactions,
-        "check_for_recurring": True,
-        "debit_as_negative": True,
-    }
-    logger.info(f"Sending transactions to Lunch Money: {data}")
-    response = httpx.post(url, headers=headers, json=data)
-    response.raise_for_status()
-    logger.info(response.json())
-    return response.json()
+    all_responses = []
+    for start in range(0, len(transactions), 500):
+        batch = transactions[start : start + 500]
+        data = {
+            "transactions": batch,
+            "check_for_recurring": True,
+            "debit_as_negative": True,
+        }
+        logger.info(f"Sending {len(batch)} transactions to Lunch Money.")
+        response = httpx.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        logger.info(response.json())
+        all_responses.append(response.json())
+    return all_responses
 
 
-def transform_transaction(gocardless_tx: Dict, lunchmoney_account_id: int) -> Dict:
+def transform_transaction(gocardless_tx: dict, lunchmoney_account_id: int) -> dict:
     logger.debug(f"Transforming transaction: {gocardless_tx}")
     raw_notes = gocardless_tx.get("remittanceInformationUnstructured", "")
     notes = (
