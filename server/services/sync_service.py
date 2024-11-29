@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime, timezone, timedelta
 from functools import lru_cache
+from http import HTTPStatus
 from pathlib import Path
 
 import httpx
@@ -43,8 +44,12 @@ def get_token_storage() -> TokenStorage:
 
 
 def extract_rate_limits(headers: httpx.Headers) -> dict:
-    reset_in_mins = int(headers.get("HTTP_X_RATELIMIT_ACCOUNT_SUCCESS_RESET", 0))
-    delta = timedelta(minutes=reset_in_mins) if reset_in_mins else timedelta(hours=24)
+    seconds_until_reset = int(headers.get("HTTP_X_RATELIMIT_ACCOUNT_SUCCESS_RESET", 0))
+    delta = (
+        timedelta(seconds=seconds_until_reset)
+        if seconds_until_reset
+        else timedelta(hours=24)
+    )
     reset_timestamp = (datetime.now(timezone.utc) + delta).isoformat()
     rate_limits = {
         "limit": int(headers.get("HTTP_X_RATELIMIT_ACCOUNT_SUCCESS_LIMIT", 0)),
@@ -259,6 +264,10 @@ def get_gocardless_transactions(
     params = {"date_from": from_date} | ({"date_to": to_date} if to_date else {})
 
     response = httpx.get(url, headers=headers, params=params, follow_redirects=True)
+    rate_limits = extract_rate_limits(response.headers)
+    if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
+        logger.warning(f"Rate limit exceeded for account {account_id}: {rate_limits}")
+        return {}, rate_limits
     response.raise_for_status()
 
     result = response.json()["transactions"]
