@@ -9,6 +9,8 @@ from pathlib import Path
 import httpx
 from flask.cli import load_dotenv
 
+DAYS_TO_SYNC = 14
+
 project_dir = Path(__file__).parents[2]
 load_dotenv(os.path.join(project_dir, ".env"))
 
@@ -190,7 +192,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
         from_date = (
             (
                 datetime.fromisoformat(link.get("lastSync", now.isoformat()))
-                - timedelta(days=5)
+                - timedelta(days=DAYS_TO_SYNC)
             )
             .date()
             .isoformat()
@@ -282,8 +284,8 @@ def send_transactions_to_lunchmoney(transactions):
     """Send new transactions to Lunch Money."""
     # Determine start_date and end_date from transaction batch
     dates = [tx["date"] for tx in transactions]
-    start_date = min(dates)
-    end_date = max(dates)
+    start_date = min(dates or datetime.now())
+    end_date = max(dates or datetime.now())
 
     # Fetch existing transactions
     existing_transactions = fetch_existing_transactions(
