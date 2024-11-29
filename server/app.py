@@ -19,7 +19,12 @@ from .routes.requisitions_routes import requisitions_bp
 load_dotenv()
 
 app = Flask(__name__, instance_relative_config=True)
-CORS(app)
+CORS(
+    app,
+    resources={
+        r"/api/*": {"origins": "http://localhost:5173"},
+    },
+)
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix="/api/auth")

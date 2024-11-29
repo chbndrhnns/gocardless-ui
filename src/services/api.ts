@@ -3,11 +3,11 @@ import type { RequisitionsResponse, Institution, InstitutionsResponse, Requisiti
 
 export async function fetchRequisitions(): Promise<RequisitionsResponse> {
   try {
-    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions`);
+    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-          errorData?.message || `API error: ${response.status} ${response.statusText}`
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
     return response.json();
@@ -23,7 +23,7 @@ export async function fetchAccountDetails(accountId: string): Promise<BankAccoun
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-          errorData?.message || `API error: ${response.status} ${response.statusText}`
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
     return response.json();
@@ -41,7 +41,7 @@ export async function deleteRequisition(id: string): Promise<void> {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-          errorData?.message || `API error: ${response.status} ${response.statusText}`
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
   } catch (error) {
@@ -56,7 +56,7 @@ export async function fetchRequisitionDetails(id: string): Promise<RequisitionDe
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-          errorData?.message || `API error: ${response.status} ${response.statusText}`
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
     return response.json();
@@ -72,7 +72,7 @@ export async function fetchInstitutions(country: string): Promise<Institution[]>
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-          errorData?.message || `API error: ${response.status} ${response.statusText}`
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
     const data: InstitutionsResponse = await response.json();
@@ -90,7 +90,7 @@ export async function createRequisition(params: {
   userLanguage: string;
 }): Promise<Requisition> {
   try {
-    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions`, {
+    const response = await fetch(`${API_CONFIG.baseUrl}/requisitions/`, {
       method: 'POST',
       headers: API_CONFIG.headers,
       body: JSON.stringify({
@@ -104,7 +104,7 @@ export async function createRequisition(params: {
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       throw new Error(
-          errorData?.message || `API error: ${response.status} ${response.statusText}`
+        errorData?.message || `API error: ${response.status} ${response.statusText}`
       );
     }
 
