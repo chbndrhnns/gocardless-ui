@@ -202,7 +202,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
             # Get fresh rate limits before sync
             _, rate_limits = get_gocardless_account_details(account_id, access_token)
             gocardless_data = get_gocardless_transactions(
-                link["gocardlessId"], from_date, access_token
+                link["gocardlessId"], access_token, from_date
             )
 
             all_transactions = []
@@ -252,11 +252,11 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
 
 
 def get_gocardless_transactions(
-    account_id: str, from_date: str, access_token: str
+    account_id: str, access_token: str, from_date: str, to_date: str = None
 ) -> Dict:
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}/transactions"
     headers = {"Authorization": f"Bearer {access_token}"}
-    params = {"date_from": from_date}
+    params = {"date_from": from_date} | ({"date_to": to_date} if to_date else {})
 
     response = httpx.get(url, headers=headers, params=params, follow_redirects=True)
     response.raise_for_status()
@@ -280,16 +280,22 @@ def send_to_lunchmoney(transactions: List[Dict]) -> Dict:
 
 def transform_transaction(gocardless_tx: Dict, lunchmoney_account_id: int) -> Dict:
     logger.debug(f"Transforming transaction: {gocardless_tx}")
+    raw_notes = gocardless_tx.get("remittanceInformationUnstructured", "")
+    notes = (
+        raw_notes
+        if "remittanceinformation:" not in raw_notes
+        else raw_notes.split("remittanceinformation:")[1].strip()
+    )
     parsed = {
         "date": datetime.fromisoformat(gocardless_tx["bookingDate"]).date().isoformat(),
-        "amount": f"{abs(float(gocardless_tx['transactionAmount']['amount'])):.4f}",
+        "amount": f"{float(gocardless_tx['transactionAmount']['amount']):.2f}",
         "currency": (gocardless_tx["transactionAmount"]["currency"]).lower(),
         "payee": gocardless_tx.get(
-            "merchantName", gocardless_tx.get("debtorName", "Unknown")
+            "merchantName", gocardless_tx.get("creditorName", "Unknown")
         ),
-        "notes": gocardless_tx.get("remittanceInformationUnstructured", ""),
+        "notes": notes,
         "account_id": lunchmoney_account_id,
-        "external_id": gocardless_tx["transactionId"],
+        "external_id": gocardless_tx["internalTransactionId"],
         "status": "uncleared",
     }
     logger.debug(f"Transformed transaction: {parsed}")

@@ -22,11 +22,39 @@ def test_dkb():
 
     assert actual == {
         "account_id": 12345,
-        "amount": "700.0000",
+        "amount": "-700.00",
         "currency": "eur",
         "date": "2024-11-26",
-        "external_id": "2024-11-26-00.17.02.252833",
+        "external_id": "9799dd15f2a208fe09d1c8045c9805e5",
         "notes": "Lebensgeld fuer Isa",
-        "payee": "Johannes Rüschel",
+        "payee": "ISA RUESCHEL",
+        "status": "uncleared",
+    }
+
+
+def test_ing():
+    tx = {
+        "bookingDate": "2024-11-22",
+        "creditorName": "AUDIBLE GMBH",
+        "endToEndId": "541RZ71AMKXHFJRP                   ",
+        "internalTransactionId": "8d15ff4f8dc878f5fea3c878f44575ea",
+        "proprietaryBankTransactionCode": "Lastschrifteinzug",
+        "remittanceInformationUnstructured": "mandatereference:0xjNei1bcEUn?iEBC24JpkhuZ88ATR,creditorid:DE31ZZZ00000563369,remittanceinformation:D01-6254502-7698230 "
+        "Audible Gmbh "
+        "541RZ71AMKXHFJRP",
+        "transactionAmount": {"amount": "-0.99", "currency": "EUR"},
+        "transactionId": "000012247539913",
+        "valueDate": "2024-11-22",
+    }
+    actual = transform_transaction(tx, 12345)
+
+    assert actual == {
+        "account_id": 12345,
+        "amount": "-0.99",
+        "currency": "eur",
+        "date": "2024-11-22",
+        "external_id": "8d15ff4f8dc878f5fea3c878f44575ea",
+        "notes": "D01-6254502-7698230 Audible Gmbh 541RZ71AMKXHFJRP",
+        "payee": "AUDIBLE GMBH",
         "status": "uncleared",
     }
