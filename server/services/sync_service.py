@@ -272,7 +272,11 @@ def send_to_lunchmoney(transactions: List[Dict]) -> Dict:
         "Authorization": f"Bearer {LUNCHMONEY_API_KEY}",
         "Content-Type": "application/json",
     }
-    data = {"transactions": transactions, "check_for_recurring": True}
+    data = {
+        "transactions": transactions,
+        "check_for_recurring": True,
+        "debit_as_negative": True,
+    }
     logger.info(f"Sending transactions to Lunch Money: {data}")
     response = httpx.post(url, headers=headers, json=data)
     response.raise_for_status()
