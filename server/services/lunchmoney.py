@@ -19,7 +19,7 @@ async def get_assets():
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{LUNCHMONEY_API_URL}/assets", headers=get_lunchmoney_headers()
+                f"{LUNCHMONEY_API_URL}/assets/", headers=get_lunchmoney_headers()
             )
             response.raise_for_status()
             data = response.json()
