@@ -22,7 +22,7 @@ app = Flask(__name__, instance_relative_config=True)
 CORS(
     app,
     resources={
-        r"/api/*": {"origins": "http://localhost:5173"},
+        r"/api/*": {"origins": os.getenv("BACKEND_CORS_ORIGINS")},
     },
 )
 
