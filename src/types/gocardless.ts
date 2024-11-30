@@ -25,11 +25,6 @@ export interface TokenResponse {
   refresh_expires: number;
 }
 
-export interface Balance {
-  amount: string;
-  currency: string;
-}
-
 export interface BankAccount {
   id: string;
   created: string;
@@ -38,8 +33,11 @@ export interface BankAccount {
   institution_id: string;
   status: string;
   owner_name: string;
-  currency?: string;
-  balance?: Balance | string;
+  currency: string;
+  balance: {
+    amount: string;
+    currency: string;
+  };
 }
 
 export interface RequisitionDetails extends Requisition {
