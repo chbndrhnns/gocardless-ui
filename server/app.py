@@ -4,10 +4,9 @@ from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
 
-from server.routes.sync_routes import sync_bp
+from server.routes.sync_routes import sync_bp, schedule_sync
 from server.services.sync_service import (
     get_token_storage,
-    schedule_sync,
 )
 from .routes.accounts_routes import accounts_bp
 from .routes.auth_routes import auth_bp

@@ -1,7 +1,7 @@
 from server.services.sync_service import transform_transaction
 
 
-def test_dkb():
+async def test_dkb():
     tx = {
         "transactionId": "2024-11-26-00.17.02.252833",
         "bookingDate": "2024-11-26",
@@ -18,7 +18,7 @@ def test_dkb():
         "internalTransactionId": "9799dd15f2a208fe09d1c8045c9805e5",
     }
 
-    actual = transform_transaction(tx, 12345)
+    actual = await transform_transaction(tx, 12345)
 
     assert actual == {
         "account_id": 12345,

@@ -15,7 +15,7 @@ async def list_assets():
 
 
 @lunchmoney_bp.route("/link", methods=["POST"])
-def link():
+async def link():
     try:
         data = request.json
         link_accounts(data["lunchmoneyId"], data["gocardlessId"])
@@ -25,7 +25,7 @@ def link():
 
 
 @lunchmoney_bp.route("/unlink", methods=["POST"])
-def unlink():
+async def unlink():
     try:
         data = request.json
         unlink_accounts(data["lunchmoneyId"])

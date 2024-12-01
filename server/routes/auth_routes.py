@@ -6,7 +6,7 @@ auth_bp = Blueprint("auth", __name__)
 
 
 @auth_bp.route("/token", methods=["POST"])
-def token():
+async def token():
     try:
         token = get_access_token()
         return jsonify(token)

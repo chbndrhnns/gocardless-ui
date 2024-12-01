@@ -2,9 +2,9 @@ from server.services.auth import get_access_token
 from server.services.sync_service import get_gocardless_transactions
 
 
-def test_get_dkb():
+async def test_get_dkb():
     account_id = "b18554fe-75c7-4127-954e-0f59f465c24c"
-    actual, _ = get_gocardless_transactions(
+    actual, _ = await get_gocardless_transactions(
         account_id, get_access_token(), from_date="2024-11-22", to_date="2024-11-22"
     )
     assert actual == {
@@ -29,9 +29,9 @@ def test_get_dkb():
     }
 
 
-def test_get_ing():
+async def test_get_ing():
     account_id = "33e12209-1d5f-4b55-b072-3db812417b89"
-    actual, _ = get_gocardless_transactions(
+    actual, _ = await get_gocardless_transactions(
         account_id, get_access_token(), from_date="2024-11-22", to_date="2024-11-22"
     )
     assert actual == {
