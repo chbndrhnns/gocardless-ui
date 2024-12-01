@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {AlertCircle, AlertTriangle, CheckCircle, Loader2, Play, RefreshCw} from 'lucide-react';
+import {AlertCircle, AlertTriangle, CheckCircle, Info, Loader2, Play, RefreshCw} from 'lucide-react';
 import {format, formatDistance, formatDistanceToNow} from 'date-fns';
 import type {SyncStatus} from '../types/sync';
 import {API_CONFIG} from "../config/api";
@@ -9,22 +9,29 @@ export function SyncDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isSyncingAll, setIsSyncingAll] = useState(false);
+    const [isStale, setIsStale] = useState(false);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
     useEffect(() => {
         fetchSyncStatus();
-        const interval = setInterval(fetchSyncStatus, 60000); // Refresh every minute
+        const interval = setInterval(fetchSyncStatus, 60000 * 10); // Refresh every minute
         return () => clearInterval(interval);
     }, []);
 
     const fetchSyncStatus = async () => {
+        setIsLoading(prevLoading => !syncStatus.length || prevLoading);
+
         try {
             const response = await fetch(`${API_CONFIG.baseUrl}/sync/status`);
             if (!response.ok) throw new Error('Failed to fetch sync status');
             const data = await response.json();
             setSyncStatus(data.accounts);
+            setLastUpdated(new Date());
+            setIsStale(false);
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
+            setIsStale(true);
         } finally {
             setIsLoading(false);
         }
@@ -77,7 +84,7 @@ export function SyncDashboard() {
     return (
         <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-4 sm:p-6 border-b border-gray-200">
+                <div className="p-4 sm:p-6 border-b border-gray-200 space-y-2">
                     <div className="flex justify-between items-center">
                         <h2 className="text-lg font-semibold text-gray-900">Sync Status</h2>
                         <button
@@ -98,6 +105,15 @@ export function SyncDashboard() {
                             )}
                         </button>
                     </div>
+                    {isStale && (
+                        <div className="flex items-center text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-md">
+                            <Info className="h-4 w-4 mr-2"/>
+                            <span>
+                                Data might not be up to date. Last successful update: {' '}
+                                {lastUpdated ? formatDistanceToNow(lastUpdated, {addSuffix: true}) : 'unknown'}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="overflow-x-auto">
@@ -248,3 +264,5 @@ export function SyncDashboard() {
         </div>
     );
 }
+
+1
