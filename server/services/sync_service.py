@@ -9,8 +9,6 @@ from pathlib import Path
 import httpx
 from flask.cli import load_dotenv
 
-DAYS_TO_SYNC = 14
-
 project_dir = Path(__file__).parents[2]
 load_dotenv(os.path.join(project_dir, ".env"))
 
@@ -32,6 +30,7 @@ LUNCHMONEY_API_KEY = os.environ.get("LUNCHMONEY_ACCESS_TOKEN")
 ACCOUNT_LINKS_FILE = Path(project_dir / "server" / "data" / "account-links.json")
 SYNC_STATUS_FILE = Path(project_dir / "server" / "data" / "sync-status.json")
 HTTP_REQUEST_TIMEOUT = 30
+DAYS_TO_SYNC = os.environ.get("DAYS_TO_SYNC", 14)
 
 
 class TokenStorage:
