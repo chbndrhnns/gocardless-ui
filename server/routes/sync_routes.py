@@ -10,6 +10,7 @@ from ..services.sync_service import (
     get_account_status,
     is_manual_sync_running,
     sync_lock,
+    fetch_all_lunchmoney_accounts,
 )
 
 sync_bp = Blueprint("sync", __name__)
@@ -20,6 +21,7 @@ def get_sync_status():
     token_storage = get_token_storage()
     accounts = load_account_links()
     access_token = get_gocardless_token(token_storage)
+    lunchmoney_accounts = fetch_all_lunchmoney_accounts()
 
     status_list = []
     for account in accounts:
@@ -30,7 +32,9 @@ def get_sync_status():
                 "gocardlessName": get_gocardless_account_name(
                     account["gocardlessId"], access_token
                 ),
-                "lunchmoneyName": get_lunchmoney_account_name(account["lunchmoneyId"]),
+                "lunchmoneyName": get_lunchmoney_account_name(
+                    account["lunchmoneyId"], lunchmoney_accounts
+                ),
                 **status,
             }
         )

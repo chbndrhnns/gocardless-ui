@@ -144,22 +144,8 @@ def get_gocardless_account_name(account_id: str, access_token: str) -> str:
     return account_data.get("iban", "Unknown Account")
 
 
-def get_lunchmoney_account_name(account_id: int) -> str:
-    url = f"{LUNCHMONEY_API_URL}/assets/"
-    headers = {
-        "Authorization": f"Bearer {LUNCHMONEY_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    response = httpx.get(
-        url, headers=headers, follow_redirects=True, timeout=HTTP_REQUEST_TIMEOUT
-    )
-    response.raise_for_status()
-    accounts = response.json().get("assets", [])
-    for account in accounts:
-        if account["id"] == account_id:
-            return account.get("name", "Unknown Account")
-    return "Unknown Account"
+def get_lunchmoney_account_name(account_id: int, accounts_dict: dict) -> str:
+    return accounts_dict.get(account_id, "Unknown Account")
 
 
 def get_account_status(account_id: str, access_token: str) -> dict:
@@ -183,11 +169,27 @@ def get_account_status(account_id: str, access_token: str) -> dict:
     return account_status
 
 
+def fetch_all_lunchmoney_accounts():
+    url = f"{LUNCHMONEY_API_URL}/assets/"
+    headers = {
+        "Authorization": f"Bearer {LUNCHMONEY_API_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    response = httpx.get(
+        url, headers=headers, follow_redirects=True, timeout=HTTP_REQUEST_TIMEOUT
+    )
+    response.raise_for_status()
+    accounts = response.json().get("assets", [])
+    return {account["id"]: account["name"] for account in accounts}
+
+
 def sync_transactions(token_storage: TokenStorage, account_id=None):
     account_links = load_account_links(account_id)
     sync_status = load_sync_status()
     now = datetime.now(timezone.utc)
     access_token = get_gocardless_token(token_storage)
+
     for link in account_links:
         account_id = link["gocardlessId"]
         logging.info(f"Fetching transactions for account {account_id}")
