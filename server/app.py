@@ -36,4 +36,4 @@ app.register_blueprint(sync_bp, url_prefix="/api/sync")
 if __name__ == "__main__":
     schedule_sync(get_token_storage())
     port = int(os.getenv("BACKEND_PORT", 4000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
