@@ -353,13 +353,16 @@ def transform_transaction(gocardless_tx: dict, lunchmoney_account_id: int) -> di
         if "remittanceinformation:" not in raw_notes
         else raw_notes.split("remittanceinformation:")[1].strip()
     )
+    payee = (
+            gocardless_tx.get("merchantName", None)
+            or gocardless_tx.get("creditorName", None)
+            or gocardless_tx.get("debtorName", "Unknown")
+    )
     parsed = {
         "date": datetime.fromisoformat(gocardless_tx["bookingDate"]).date().isoformat(),
         "amount": f"{float(gocardless_tx['transactionAmount']['amount']):.2f}",
         "currency": (gocardless_tx["transactionAmount"]["currency"]).lower(),
-        "payee": gocardless_tx.get(
-            "merchantName", gocardless_tx.get("creditorName", "Unknown")
-        ).strip(),
+        "payee": payee.strip(),
         "notes": notes.strip(),
         "asset_id": lunchmoney_account_id,
         "external_id": gocardless_tx["internalTransactionId"],
