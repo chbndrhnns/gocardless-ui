@@ -17,7 +17,7 @@ load_dotenv(os.path.join(project_dir, ".env"))
 # Set up logging
 logging.basicConfig(
     level=os.getenv("BACKEND_LOG_LEVEL"),
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    format="%(asctime)s - %(module)s - %(funcName)s - %(lineno)d - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 logging.getLogger("httpcore").setLevel(logging.INFO)
@@ -170,11 +170,11 @@ def get_account_status(account_id: str, access_token: str) -> dict:
             "isSyncing": False,
         }
 
-    # Get fresh rate limits
-    _, rate_limits = get_gocardless_account_details(account_id, access_token)
-    account_status["rateLimit"] = rate_limits
-    account_status["nextSync"] = get_next_sync_time()
+    # Use rate limits from sync-status.json
+    # _ , rate_limits = get_gocardless_account_details(account_id, access_token)
+    # account_status["rateLimit"] = rate_limits
 
+    account_status["nextSync"] = get_next_sync_time()
     return account_status
 
 
@@ -182,13 +182,10 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
     account_links = load_account_links(account_id)
     sync_status = load_sync_status()
     now = datetime.now(timezone.utc)
-
     access_token = get_gocardless_token(token_storage)
-
     for link in account_links:
         account_id = link["gocardlessId"]
         logging.info(f"Fetching transactions for account {account_id}")
-
         from_date = (
             (
                 datetime.fromisoformat(link.get("lastSync", now.isoformat()))
@@ -197,11 +194,9 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
             .date()
             .isoformat()
         )
-
         # Update sync status
         if account_id not in sync_status:
             sync_status[account_id] = {}
-
         sync_status[account_id]["isSyncing"] = True
         sync_status[account_id]["lastSyncStatus"] = "pending"
         save_sync_status(sync_status)
@@ -210,6 +205,14 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
             gocardless_data, rate_limits = get_gocardless_transactions(
                 link["gocardlessId"], access_token, from_date
             )
+
+            # Check and adjust rate limits
+            if rate_limits:
+                reset_time = datetime.fromisoformat(rate_limits["reset"])
+                if now >= reset_time:
+                    rate_limits["limit"] = -1
+                    rate_limits["remaining"] = -1
+                    rate_limits["reset"] = None
 
             all_transactions = []
             for tx_type in [
@@ -221,7 +224,6 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
                     for tx in gocardless_data.get(tx_type, [])
                 ]
                 all_transactions.extend(transformed_transactions)
-
             try:
                 result = send_transactions_to_lunchmoney(all_transactions)
                 logging.info(
@@ -231,8 +233,7 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
                 logging.error(
                     f"Error sending transactions to Lunch Money for account {link['gocardlessId']}: {str(e)}"
                 )
-
-            # For now, we'll just simulate a successful sync
+            # Update sync status with the calculated rate limits
             sync_status[account_id].update(
                 {
                     "lastSync": datetime.now(timezone.utc).isoformat(),
@@ -254,7 +255,6 @@ def sync_transactions(token_storage: TokenStorage, account_id=None):
                     "isSyncing": False,
                 }
             )
-
         save_sync_status(sync_status)
 
 
@@ -270,13 +270,19 @@ def get_gocardless_transactions(
     if response.status_code == HTTPStatus.TOO_MANY_REQUESTS:
         logger.warning(f"Rate limit exceeded for account {account_id}: {rate_limits}")
         return {}, rate_limits
+    if (
+            HTTPStatus.BAD_REQUEST
+            <= response.status_code
+            < HTTPStatus.INTERNAL_SERVER_ERROR
+    ):
+        logger.error(
+            f"Error fetching transactions for account {account_id}: {response.text}"
+        )
     response.raise_for_status()
 
     result = response.json()["transactions"]
     logger.debug(f"Received transactions for account {account_id}: {result}")
 
-    # Extract and return rate limits with transactions
-    rate_limits = extract_rate_limits(response.headers)
     return result, rate_limits
 
 
@@ -368,6 +374,11 @@ def schedule_sync(token_storage: TokenStorage):
 
     scheduler = BackgroundScheduler()
     scheduler.start()
+    # scheduler.add_job(
+    #     lambda: sync_transactions(token_storage),
+    #     id="startup_sync_job",
+    #     replace_existing=True,
+    # )
     scheduler.add_job(
         lambda: sync_transactions(token_storage),
         trigger=CronTrigger(hour="*/3"),

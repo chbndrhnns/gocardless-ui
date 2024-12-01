@@ -82,7 +82,7 @@ export function SyncDashboard() {
                         <h2 className="text-lg font-semibold text-gray-900">Sync Status</h2>
                         <button
                             onClick={syncAllAccounts}
-                            disabled={isSyncingAll || syncStatus.some(acc => acc.isSyncing)}
+                            disabled={isSyncingAll || syncStatus.some(acc => acc.isSyncing) || syncStatus.every(acc => acc.rateLimit.remaining === 0)}
                             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                         >
                             {isSyncingAll ? (
@@ -159,15 +159,28 @@ export function SyncDashboard() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <div className="text-sm text-gray-900">
-                                            {account.rateLimit.remaining} / {account.rateLimit.limit}
-                                        </div>
-                                        {account.rateLimit.remaining < account.rateLimit.limit * 0.2 && (
-                                            <AlertTriangle className="h-4 w-4 text-yellow-500 ml-2"/>
+                                        {account.rateLimit.remaining === 0 ? (
+                                            <div className="flex items-center text-sm text-yellow-600">
+                                                <AlertTriangle className="h-4 w-4 mr-2"/>
+                                                Rate limit active
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="text-sm text-gray-900">
+                                                    {account.rateLimit.remaining} / {account.rateLimit.limit}
+                                                </div>
+                                                {account.rateLimit.remaining < account.rateLimit.limit * 0.2 && (
+                                                    <AlertTriangle className="h-4 w-4 text-yellow-500 ml-2"/>
+                                                )}
+                                            </>
                                         )}
                                     </div>
                                     <div className="text-sm text-gray-500">
-                                        Resets {formatDistance(new Date(account.rateLimit.reset), new Date(), {addSuffix: true})}
+                                        {account.rateLimit.reset ? (
+                                            `Resets ${formatDistance(new Date(account.rateLimit.reset), new Date(), {addSuffix: true})}`
+                                        ) : (
+                                            'Reset time unknown'
+                                        )}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -176,25 +189,25 @@ export function SyncDashboard() {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                account.lastSyncStatus === 'success'
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : account.lastSyncStatus === 'error'
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : 'bg-gray-100 text-gray-800'
-                                            }`}>
-                                            {account.lastSyncStatus === 'success' &&
-                                                <CheckCircle className="h-3 w-3 mr-1"/>}
-                                            {account.lastSyncStatus === 'error' &&
-                                                <AlertCircle className="h-3 w-3 mr-1"/>}
-                                            {account.lastSyncStatus || 'Never synced'}
-                                        </span>
+                                    <span
+                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                            account.lastSyncStatus === 'success'
+                                                ? 'bg-green-100 text-green-800'
+                                                : account.lastSyncStatus === 'error'
+                                                    ? 'bg-red-100 text-red-800'
+                                                    : 'bg-gray-100 text-gray-800'
+                                        }`}>
+                                        {account.lastSyncStatus === 'success' &&
+                                            <CheckCircle className="h-3 w-3 mr-1"/>}
+                                        {account.lastSyncStatus === 'error' &&
+                                            <AlertCircle className="h-3 w-3 mr-1"/>}
+                                        {account.lastSyncStatus || 'Never synced'}
+                                    </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button
                                         onClick={() => triggerSync(account.gocardlessId)}
-                                        disabled={account.isSyncing || (account.rateLimit.remaining === 0)}
+                                        disabled={account.isSyncing || account.rateLimit.limit === 0}
                                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                                     >
                                         {account.isSyncing ? (
@@ -202,7 +215,7 @@ export function SyncDashboard() {
                                                 <Loader2 className="h-3 w-3 mr-1 animate-spin"/>
                                                 Syncing...
                                             </>
-                                        ) : account.rateLimit.remaining === 0 ? (
+                                        ) : account.rateLimit.limit === 0 ? (
                                             <>
                                                 <AlertTriangle className="h-3 w-3 mr-1"/>
                                                 Rate Limited
@@ -233,6 +246,5 @@ export function SyncDashboard() {
                 )
             }
         </div>
-    )
-        ;
+    );
 }
