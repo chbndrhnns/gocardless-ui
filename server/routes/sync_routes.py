@@ -8,6 +8,8 @@ from ..services.sync_service import (
     sync_transactions,
     get_gocardless_token,
     get_account_status,
+    is_manual_sync_running,
+    sync_lock,
 )
 
 sync_bp = Blueprint("sync", __name__)
@@ -44,5 +46,12 @@ def trigger_sync():
     if "accountId" not in data:
         return jsonify({"status": "error", "message": "accountId not provided"}), 400
 
-    sync_transactions(token_storage, data["accountId"])
+    is_manual_sync_running.set()
+
+    with sync_lock:
+        try:
+            sync_transactions(token_storage, data["accountId"])
+        finally:
+            is_manual_sync_running.clear()
+
     return jsonify({"status": "success"})

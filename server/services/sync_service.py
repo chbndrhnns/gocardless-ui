@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import threading
 from datetime import datetime, timezone, timedelta
 from functools import lru_cache
 from http import HTTPStatus
@@ -11,6 +12,10 @@ from flask.cli import load_dotenv
 
 project_dir = Path(__file__).parents[2]
 load_dotenv(os.path.join(project_dir, ".env"))
+
+is_manual_sync_running = threading.Event()
+sync_lock = threading.Lock()
+
 
 # Set up logging
 logging.basicConfig(
@@ -371,6 +376,15 @@ def transform_transaction(gocardless_tx: dict, lunchmoney_account_id: int) -> di
     return parsed
 
 
+def periodic_sync(token_storage):
+    if is_manual_sync_running.is_set():
+        logging.info("Manual sync in progress, skipping this round of periodic sync.")
+        return
+
+    with sync_lock:
+        sync_transactions(token_storage)
+
+
 def schedule_sync(token_storage: TokenStorage):
     from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.triggers.cron import CronTrigger
@@ -378,12 +392,12 @@ def schedule_sync(token_storage: TokenStorage):
     scheduler = BackgroundScheduler()
     scheduler.start()
     # scheduler.add_job(
-    #     lambda: sync_transactions(token_storage),
+    #     lambda: periodic_sync(token_storage),
     #     id="startup_sync_job",
     #     replace_existing=True,
     # )
     scheduler.add_job(
-        lambda: sync_transactions(token_storage),
+        lambda: periodic_sync(token_storage),
         trigger=CronTrigger(hour="*/3"),
         id="sync_job",
         replace_existing=True,
