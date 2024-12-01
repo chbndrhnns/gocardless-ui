@@ -168,6 +168,7 @@ def get_account_status(account_id: str, access_token: str) -> dict:
             "lastSyncStatus": None,
             "lastSyncTransactions": 0,
             "isSyncing": False,
+            "rateLimit": {"limit": -1, "remaining": -1, "reset": None},
         }
 
     # Use rate limits from sync-status.json
