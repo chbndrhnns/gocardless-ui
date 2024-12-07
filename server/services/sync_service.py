@@ -84,8 +84,23 @@ async def load_sync_status() -> dict:
 async def save_sync_status(status: dict):
     SYNC_STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(SYNC_STATUS_FILE, "w") as f:
-        # noinspection PyTypeChecker
         json.dump(status, f, indent=2)
+
+
+async def reset_sync_status():
+    sync_status = await load_sync_status()
+    for account_id in sync_status:
+        if sync_status[account_id].get("isSyncing"):
+            logger.info(
+                f"Resetting sync status for account {account_id}: isSyncing -> false"
+            )
+            sync_status[account_id]["isSyncing"] = False
+        if sync_status[account_id].get("lastSyncStatus") == "pending":
+            logger.info(
+                f"Resetting sync status for account {account_id}: lastSyncStatus -> error"
+            )
+            sync_status[account_id]["lastSyncStatus"] = "error"
+    await save_sync_status(sync_status)
 
 
 async def get_next_sync_time() -> str:

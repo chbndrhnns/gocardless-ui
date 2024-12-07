@@ -3,11 +3,10 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
+import asyncio
 
 from server.routes.sync_routes import sync_bp, schedule_sync
-from server.services.sync_service import (
-    get_token_storage,
-)
+from server.services.sync_service import get_token_storage, reset_sync_status
 from .routes.accounts_routes import accounts_bp
 from .routes.auth_routes import auth_bp
 from .routes.institutions_routes import institutions_bp
@@ -17,12 +16,13 @@ from .routes.requisitions_routes import requisitions_bp
 # Load environment variables
 load_dotenv()
 
+# Configure CORS with more specific settings
 app = Flask(__name__, instance_relative_config=True)
 CORS(
     app,
     resources={
         r"/api/*": {
-            r"/api/*": {"origins": os.getenv("BACKEND_CORS_ORIGINS")},
+            "origins": ["http://localhost:5173"],  # Vite's default dev server port
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,

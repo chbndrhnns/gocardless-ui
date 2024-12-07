@@ -11,6 +11,7 @@ from ..services.sync_service import (
     get_account_status,
     fetch_all_lunchmoney_accounts,
     TokenStorage,
+    reset_sync_status,
 )
 
 sync_bp = Blueprint("sync", __name__)
@@ -18,6 +19,8 @@ sync_bp = Blueprint("sync", __name__)
 
 @sync_bp.route("/status")
 async def get_sync_status():
+    await reset_sync_status()
+
     token_storage = get_token_storage()
     accounts = await load_account_links()
     access_token = await get_gocardless_token(token_storage)
