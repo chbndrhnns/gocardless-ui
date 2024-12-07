@@ -17,7 +17,6 @@ from ..services.sync_service import (
 )
 
 is_manual_sync_running = asyncio.Event()
-sync_lock = asyncio.Lock()
 
 
 sync_bp = Blueprint("sync", __name__)
@@ -59,11 +58,10 @@ async def trigger_sync():
 
     is_manual_sync_running.set()
 
-    async with sync_lock:
-        try:
-            await sync_transactions(token_storage, data["accountId"])
-        finally:
-            is_manual_sync_running.clear()
+    try:
+        await sync_transactions(token_storage, data["accountId"])
+    finally:
+        is_manual_sync_running.clear()
 
     return jsonify({"status": "success"})
 
@@ -73,8 +71,7 @@ async def periodic_sync(token_storage):
         logging.info("Manual sync in progress, skipping this round of periodic sync.")
         return
 
-    async with sync_lock:
-        await sync_transactions(token_storage)
+    await sync_transactions(token_storage)
 
 
 def schedule_sync(token_storage: TokenStorage):
