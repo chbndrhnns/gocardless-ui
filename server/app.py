@@ -21,7 +21,12 @@ app = Flask(__name__, instance_relative_config=True)
 CORS(
     app,
     resources={
-        r"/api/*": {"origins": os.getenv("BACKEND_CORS_ORIGINS")},
+        r"/api/*": {
+            r"/api/*": {"origins": os.getenv("BACKEND_CORS_ORIGINS")},
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+        }
     },
 )
 
