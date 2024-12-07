@@ -1,6 +1,3 @@
-import asyncio
-import logging
-
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from flask import Blueprint, jsonify, request
 
@@ -15,9 +12,6 @@ from ..services.sync_service import (
     fetch_all_lunchmoney_accounts,
     TokenStorage,
 )
-
-is_manual_sync_running = asyncio.Event()
-
 
 sync_bp = Blueprint("sync", __name__)
 
@@ -56,21 +50,12 @@ async def trigger_sync():
     if "accountId" not in data:
         return jsonify({"status": "error", "message": "accountId not provided"}), 400
 
-    is_manual_sync_running.set()
-
-    try:
-        await sync_transactions(token_storage, data["accountId"])
-    finally:
-        is_manual_sync_running.clear()
+    await sync_transactions(token_storage, data["accountId"])
 
     return jsonify({"status": "success"})
 
 
 async def periodic_sync(token_storage):
-    if is_manual_sync_running.is_set():
-        logging.info("Manual sync in progress, skipping this round of periodic sync.")
-        return
-
     await sync_transactions(token_storage)
 
 
