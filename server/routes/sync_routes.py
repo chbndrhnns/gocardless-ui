@@ -45,9 +45,9 @@ async def get_sync_status():
 @sync_bp.route("", methods=["POST"])
 async def trigger_sync():
     token_storage = get_token_storage()
-    data = request.get_json()
+    data = request.get_json(silent=True)
 
-    await sync_transactions(token_storage, data["accountId"])
+    await sync_transactions(token_storage, data["accountId"] if data else None)
 
     return jsonify({"status": "success"})
 
