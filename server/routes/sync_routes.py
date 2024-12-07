@@ -47,9 +47,6 @@ async def trigger_sync():
     token_storage = get_token_storage()
     data = request.get_json()
 
-    if "accountId" not in data:
-        return jsonify({"status": "error", "message": "accountId not provided"}), 400
-
     await sync_transactions(token_storage, data["accountId"])
 
     return jsonify({"status": "success"})

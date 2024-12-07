@@ -181,7 +181,7 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
     if account_id:
         logger.info(f"Syncing transactions for account {account_id}")
     else:
-        logger.info(f"Syncing transactions for account {account_id}")
+        logger.info(f"Syncing transactions all accounts")
 
     account_links = await load_account_links(account_id)
     sync_status = await load_sync_status()
@@ -276,9 +276,9 @@ async def get_gocardless_transactions(
         logger.warning(f"Rate limit exceeded for account {account_id}: {rate_limits}")
         return {}, rate_limits
     if (
-            HTTPStatus.BAD_REQUEST
-            <= response.status_code
-            < HTTPStatus.INTERNAL_SERVER_ERROR
+        HTTPStatus.BAD_REQUEST
+        <= response.status_code
+        < HTTPStatus.INTERNAL_SERVER_ERROR
     ):
         logger.error(
             f"Error fetching transactions for account {account_id}: {response.text}"
@@ -350,7 +350,7 @@ async def send_batch(transactions: list[dict]) -> list[dict]:
 
 
 async def transform_transaction(
-        gocardless_tx: dict, lunchmoney_account_id: int
+    gocardless_tx: dict, lunchmoney_account_id: int
 ) -> dict:
     logger.debug(f"Transforming transaction: {gocardless_tx}")
     raw_notes = gocardless_tx.get("remittanceInformationUnstructured", "")
@@ -360,9 +360,9 @@ async def transform_transaction(
         else raw_notes.split("remittanceinformation:")[1].strip()
     )
     payee = (
-            gocardless_tx.get("merchantName", None)
-            or gocardless_tx.get("creditorName", None)
-            or gocardless_tx.get("debtorName", "Unknown")
+        gocardless_tx.get("merchantName", None)
+        or gocardless_tx.get("creditorName", None)
+        or gocardless_tx.get("debtorName", "Unknown")
     )
     parsed = {
         "date": datetime.fromisoformat(gocardless_tx["bookingDate"]).date().isoformat(),

@@ -48,7 +48,7 @@ async def test_ing():
         "proprietaryBankTransactionCode": "Lastschrifteinzug",
         "remittanceInformationUnstructured": "mandatereference:0xjNei1bcEUn?iEBC24JpkhuZ8,creditorid:DE31ZZZ00000563,remittanceinformation:D01-6254502-7698 "
         "Audible Gmbh "
-                                             "541RZ71AMKXHF",
+        "541RZ71AMKXHF",
         "transactionAmount": {"amount": "-0.99", "currency": "EUR"},
         "transactionId": "000012247539913",
         "valueDate": "2024-11-22",
