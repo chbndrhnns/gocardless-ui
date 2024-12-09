@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from server.services.lunchmoney import link_accounts, unlink_accounts, get_assets
+
+from ..services.lunchmoney import link_accounts, unlink_accounts, get_assets
 
 router = APIRouter()
 

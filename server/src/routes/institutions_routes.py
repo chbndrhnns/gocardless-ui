@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
-from server.services.institutions import get_institutions
+from fastapi import APIRouter, Query
+
+from ..services.institutions import get_institutions
 
 router = APIRouter()
 

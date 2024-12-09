@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
-from server.services.accounts import get_account_details
+from fastapi import APIRouter
+
+from ..services.accounts import get_account_details
 
 router = APIRouter()
 

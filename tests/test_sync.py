@@ -1,6 +1,6 @@
 import pytest
 
-from server.services.sync_service import sync_transactions, get_token_storage
+from server import sync_transactions, get_token_storage
 
 
 @pytest.mark.skip

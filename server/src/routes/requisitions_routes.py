@@ -1,6 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from server.services.requisitions import (
+from ..services.requisitions import (
     get_requisition_details,
     create_new_requisition,
     remove_requisition,

@@ -7,11 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from server.services.sync_service import (
-    TokenStorage,
-    sync_transactions,
-    get_token_storage,
-)
+from .services.sync_service import TokenStorage, sync_transactions, get_token_storage
 from .routes import (
     accounts_routes,
     auth_routes,
@@ -81,4 +77,4 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.getenv("BACKEND_PORT", 4000))
-    uvicorn.run("server.app:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=port)

@@ -1,6 +1,6 @@
 import pytest
 
-from server.services.sync_service import transform_transaction
+from server import transform_transaction
 
 pytestmark = [pytest.mark.anyio]
 

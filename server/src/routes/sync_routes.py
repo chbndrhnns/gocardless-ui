@@ -2,7 +2,7 @@ from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 
-from server.services.sync_service import (
+from ..services.sync_service import (
     get_token_storage,
     get_gocardless_account_name,
     get_lunchmoney_account_name,

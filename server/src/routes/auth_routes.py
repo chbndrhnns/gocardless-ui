@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
-from server.services.auth import get_access_token
+from fastapi import APIRouter
+
+from ..services.auth import get_access_token
 
 router = APIRouter()
 
