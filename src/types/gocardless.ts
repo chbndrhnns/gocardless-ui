@@ -18,13 +18,6 @@ export interface RequisitionsResponse {
     results: Requisition[];
 }
 
-export interface TokenResponse {
-    access: string;
-    access_expires: number;
-    refresh: string;
-    refresh_expires: number;
-}
-
 export interface BankAccount {
     id: string;
     created: string;

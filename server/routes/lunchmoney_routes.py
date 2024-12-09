@@ -12,26 +12,17 @@ class LinkAccountsRequest(BaseModel):
 
 @router.get("/assets")
 async def list_assets():
-    try:
-        assets = await get_assets()
-        return {"assets": assets}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    assets = await get_assets()
+    return {"assets": assets}
 
 
 @router.post("/link")
 async def link(request: LinkAccountsRequest):
-    try:
-        link_accounts(request.lunchmoneyId, request.gocardlessId)
-        return {"message": "Accounts linked successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    link_accounts(request.lunchmoneyId, request.gocardlessId)
+    return {"message": "Accounts linked successfully"}
 
 
 @router.post("/unlink")
 async def unlink(request: LinkAccountsRequest):
-    try:
-        unlink_accounts(request.lunchmoneyId)
-        return {"message": "Account unlinked successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    unlink_accounts(request.lunchmoneyId)
+    return {"message": "Account unlinked successfully"}

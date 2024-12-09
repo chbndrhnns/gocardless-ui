@@ -34,8 +34,8 @@ def create_new_token():
                 f"{API_CONFIG['base_url']}/token/new/",
                 headers=API_CONFIG["headers"],
                 json={
-                    "secret_id": os.getenv("VITE_SECRET_ID"),
-                    "secret_key": os.getenv("VITE_SECRET_KEY"),
+                    "secret_id": os.getenv("GOCARDLESS_SECRET_ID"),
+                    "secret_key": os.getenv("GOCARDLESS_SECRET_KEY"),
                 },
             )
             response.raise_for_status()
@@ -43,7 +43,6 @@ def create_new_token():
 
             update_tokens(data)
             return data["access"]
-
     except Exception as e:
         raise Exception(f"Error creating token: {str(e)}")
 

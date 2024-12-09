@@ -19,35 +19,23 @@ class CreateRequisitionRequest(BaseModel):
 
 @router.get("/")
 async def list_requisitions():
-    try:
-        requisitions = await get_requisitions()
-        return requisitions
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    requisitions = await get_requisitions()
+    return requisitions
 
 
 @router.get("/{id}")
 async def get_details(id: str):
-    try:
-        details = await get_requisition_details(id)
-        return details
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    details = await get_requisition_details(id)
+    return details
 
 
 @router.post("/")
 async def create(request: CreateRequisitionRequest):
-    try:
-        requisition = await create_new_requisition(request.dict())
-        return requisition
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    requisition = await create_new_requisition(request.dict())
+    return requisition
 
 
 @router.delete("/{id}")
 async def delete(id: str):
-    try:
-        await remove_requisition(id)
-        return {"status": "success"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    await remove_requisition(id)
+    return {"status": "success"}

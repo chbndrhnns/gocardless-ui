@@ -24,8 +24,8 @@ logging.getLogger("httpx").setLevel(logging.INFO)
 
 # Configuration
 GOCARDLESS_API_URL = "https://bankaccountdata.gocardless.com/api/v2"
-GOCARDLESS_SECRET_ID = os.environ.get("VITE_SECRET_ID")
-GOCARDLESS_SECRET_KEY = os.environ.get("VITE_SECRET_KEY")
+GOCARDLESS_SECRET_ID = os.environ.get("GOCARDLESS_SECRET_ID")
+GOCARDLESS_SECRET_KEY = os.environ.get("GOCARDLESS_SECRET_KEY")
 LUNCHMONEY_API_URL = "https://dev.lunchmoney.app/v1"
 LUNCHMONEY_API_KEY = os.environ.get("LUNCHMONEY_ACCESS_TOKEN")
 ACCOUNT_LINKS_FILE = Path(project_dir / "server" / "data" / "account-links.json")
