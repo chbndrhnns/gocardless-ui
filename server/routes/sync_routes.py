@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 
@@ -11,7 +11,6 @@ from server.services.sync_service import (
     get_gocardless_token,
     get_account_status,
     fetch_all_lunchmoney_accounts,
-    TokenStorage,
     reset_sync_status,
 )
 
@@ -55,16 +54,3 @@ async def trigger_sync(request: SyncRequest, background_tasks: BackgroundTasks):
     token_storage = get_token_storage()
     background_tasks.add_task(sync_transactions, token_storage, request.accountId)
     return {"status": "success"}
-
-
-async def schedule_sync(token_storage: TokenStorage):
-    from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-    scheduler = AsyncIOScheduler()
-    scheduler.start()
-    scheduler.add_job(
-        sync_transactions,
-        args=(token_storage,),
-        id="startup_sync_job",
-        replace_existing=True,
-    )
