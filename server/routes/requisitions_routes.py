@@ -1,46 +1,53 @@
-from flask import Blueprint, jsonify, request
-
-from ..services.requisitions import (
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from server.services.requisitions import (
     get_requisition_details,
     create_new_requisition,
     remove_requisition,
     get_requisitions,
 )
 
-requisitions_bp = Blueprint("requisitions", __name__)
+router = APIRouter()
 
 
-@requisitions_bp.route("/", methods=["GET"])
+class CreateRequisitionRequest(BaseModel):
+    institution_id: str
+    redirect: str
+    reference: str
+    user_language: str
+
+
+@router.get("/")
 async def list_requisitions():
     try:
         requisitions = await get_requisitions()
-        return jsonify(requisitions)
+        return requisitions
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@requisitions_bp.route("/<id>", methods=["GET"])
-async def get_details(id):
+@router.get("/{id}")
+async def get_details(id: str):
     try:
         details = await get_requisition_details(id)
-        return jsonify(details)
+        return details
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@requisitions_bp.route("/", methods=["POST"])
-async def create():
+@router.post("/")
+async def create(request: CreateRequisitionRequest):
     try:
-        requisition = await create_new_requisition(request.json)
-        return jsonify(requisition)
+        requisition = await create_new_requisition(request.dict())
+        return requisition
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@requisitions_bp.route("/<id>", methods=["DELETE"])
-async def delete(id):
+@router.delete("/{id}")
+async def delete(id: str):
     try:
         await remove_requisition(id)
-        return "", 204
+        return {"status": "success"}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))

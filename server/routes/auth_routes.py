@@ -1,14 +1,13 @@
-from flask import Blueprint, jsonify
+from fastapi import APIRouter, HTTPException
+from server.services.auth import get_access_token
 
-from ..services.auth import get_access_token
-
-auth_bp = Blueprint("auth", __name__)
+router = APIRouter()
 
 
-@auth_bp.route("/token", methods=["POST"])
+@router.post("/token")
 async def token():
     try:
         token = get_access_token()
-        return jsonify(token)
+        return token
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))

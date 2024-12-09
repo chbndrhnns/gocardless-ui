@@ -1,34 +1,37 @@
-from flask import Blueprint, jsonify, request
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from server.services.lunchmoney import link_accounts, unlink_accounts, get_assets
 
-from ..services.lunchmoney import link_accounts, unlink_accounts, get_assets
-
-lunchmoney_bp = Blueprint("lunchmoney", __name__)
+router = APIRouter()
 
 
-@lunchmoney_bp.route("/assets", methods=["GET"])
+class LinkAccountsRequest(BaseModel):
+    lunchmoneyId: int
+    gocardlessId: str
+
+
+@router.get("/assets")
 async def list_assets():
     try:
         assets = await get_assets()
-        return jsonify({"assets": assets})
+        return {"assets": assets}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@lunchmoney_bp.route("/link", methods=["POST"])
-async def link():
+@router.post("/link")
+async def link(request: LinkAccountsRequest):
     try:
-        data = request.json
-        link_accounts(data["lunchmoneyId"], data["gocardlessId"])
-        return jsonify({"message": "Accounts linked successfully"})
+        link_accounts(request.lunchmoneyId, request.gocardlessId)
+        return {"message": "Accounts linked successfully"}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-@lunchmoney_bp.route("/unlink", methods=["POST"])
-async def unlink():
+@router.post("/unlink")
+async def unlink(request: LinkAccountsRequest):
     try:
-        data = request.json
-        unlink_accounts(data["lunchmoneyId"])
-        return jsonify({"message": "Account unlinked successfully"})
+        unlink_accounts(request.lunchmoneyId)
+        return {"message": "Account unlinked successfully"}
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))

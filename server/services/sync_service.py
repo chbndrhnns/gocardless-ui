@@ -7,7 +7,7 @@ from http import HTTPStatus
 from pathlib import Path
 
 import httpx
-from flask.cli import load_dotenv
+from dotenv import load_dotenv
 
 project_dir = Path(__file__).parents[2]
 load_dotenv(os.path.join(project_dir, ".env"))

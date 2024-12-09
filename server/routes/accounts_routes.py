@@ -1,14 +1,13 @@
-from flask import Blueprint, jsonify
+from fastapi import APIRouter, HTTPException
+from server.services.accounts import get_account_details
 
-from ..services.accounts import get_account_details
-
-accounts_bp = Blueprint("accounts", __name__)
+router = APIRouter()
 
 
-@accounts_bp.route("/<id>", methods=["GET"])
-async def get_account(id):
+@router.get("/{id}")
+async def get_account(id: str):
     try:
         account = await get_account_details(id)
-        return jsonify(account)
+        return account
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))

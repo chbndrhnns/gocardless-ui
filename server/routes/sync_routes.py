@@ -1,7 +1,8 @@
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from flask import Blueprint, jsonify, request
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from pydantic import BaseModel
+from typing import Optional
 
-from ..services.sync_service import (
+from server.services.sync_service import (
     get_token_storage,
     get_gocardless_account_name,
     get_lunchmoney_account_name,
@@ -14,10 +15,14 @@ from ..services.sync_service import (
     reset_sync_status,
 )
 
-sync_bp = Blueprint("sync", __name__)
+router = APIRouter()
 
 
-@sync_bp.route("/status")
+class SyncRequest(BaseModel):
+    accountId: Optional[str] = None
+
+
+@router.get("/status")
 async def get_sync_status():
     await reset_sync_status()
 
@@ -42,37 +47,24 @@ async def get_sync_status():
             }
         )
 
-    return jsonify({"accounts": status_list})
+    return {"accounts": status_list}
 
 
-@sync_bp.route("", methods=["POST"])
-async def trigger_sync():
+@router.post("")
+async def trigger_sync(request: SyncRequest, background_tasks: BackgroundTasks):
     token_storage = get_token_storage()
-    data = request.get_json(silent=True)
-
-    await sync_transactions(token_storage, data["accountId"] if data else None)
-
-    return jsonify({"status": "success"})
+    background_tasks.add_task(sync_transactions, token_storage, request.accountId)
+    return {"status": "success"}
 
 
-async def periodic_sync(token_storage):
-    await sync_transactions(token_storage)
+async def schedule_sync(token_storage: TokenStorage):
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-
-def schedule_sync(token_storage: TokenStorage):
     scheduler = AsyncIOScheduler()
     scheduler.start()
     scheduler.add_job(
-        periodic_sync,
+        sync_transactions,
         args=(token_storage,),
         id="startup_sync_job",
         replace_existing=True,
     )
-
-    # from apscheduler.triggers.cron import CronTrigger
-    # scheduler.add_job(
-    #     lambda: periodic_sync(token_storage),
-    #     trigger=CronTrigger(hour="*/3"),
-    #     id="sync_job",
-    #     replace_existing=True,
-    # )

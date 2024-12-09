@@ -1,15 +1,13 @@
-from flask import Blueprint, jsonify, request
+from fastapi import APIRouter, HTTPException, Query
+from server.services.institutions import get_institutions
 
-from ..services.institutions import get_institutions
-
-institutions_bp = Blueprint("institutions", __name__)
+router = APIRouter()
 
 
-@institutions_bp.route("/", methods=["GET"])
-async def list_institutions():
+@router.get("/")
+async def list_institutions(country: str = Query(..., description="Country code")):
     try:
-        country = request.args.get("country")
         institutions = await get_institutions(country)
-        return jsonify(institutions)
+        return institutions
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        raise HTTPException(status_code=500, detail=str(e))
