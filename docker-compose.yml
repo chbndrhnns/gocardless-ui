@@ -1,20 +1,21 @@
 services:
   frontend:
-    image: node:16
-    working_dir: /app
-    volumes:
-      - ./src:/app
-      - /app/node_modules
+    build:
+      context: .
+      dockerfile: Dockerfile-frontend
     ports:
       - '5173:5173'
-    command: npm run dev:frontend
     env_file:
       - .env
+    depends_on:
+      - backend
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile-backend
+    ports:
+      - "4000:4000"
     volumes:
       - ./server/data:/app/data
     env_file:

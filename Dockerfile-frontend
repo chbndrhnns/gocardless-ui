@@ -1,0 +1,25 @@
+# Use the official Node.js 16 image.
+FROM node:18
+
+# Set the working directory to /app inside the container.
+WORKDIR /app
+
+# Copy package.json and package-lock.json files to the container.
+COPY package*.json ./
+COPY vite.config.ts ./
+
+# Install project dependencies.
+RUN npm install
+
+# Copy all other source files.
+COPY src src/
+COPY *.js .
+COPY *.json .
+COPY index.html .
+COPY vite.config.ts .
+RUN npm run build
+
+EXPOSE 4173
+
+# The command to run your application
+CMD ["npm", "run", "preview"]
