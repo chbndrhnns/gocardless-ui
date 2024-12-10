@@ -7,7 +7,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .services.sync_service import TokenStorage, sync_transactions, get_token_storage
+from .services.sync_service import (
+    TokenStorage,
+    sync_transactions,
+    get_token_storage,
+    load_account_links,
+)
 from .routes import (
     accounts_routes,
     auth_routes,
@@ -42,6 +47,12 @@ async def schedule_sync(token_storage: TokenStorage):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    account_links = await load_account_links()
+    if account_links:
+        logger.info(f"Loaded account links: {account_links}")
+    else:
+        logger.info("No account links found.")
+
     app.state.scheduler = await schedule_sync(get_token_storage())
     yield
     app.state.scheduler.shutdown()
