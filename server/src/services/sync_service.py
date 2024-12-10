@@ -258,7 +258,7 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
                 {
                     "lastSync": datetime.now(timezone.utc).isoformat(),
                     "lastSyncStatus": "success",
-                    "lastSyncTransactions": len(all_transactions),
+                    "lastSyncTransactions": len(result),
                     "isSyncing": False,
                     "rateLimit": rate_limits,
                 }
