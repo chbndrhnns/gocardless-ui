@@ -75,11 +75,16 @@ def link_accounts(lunchmoney_id: int, gocardless_id: str):
         raise Exception(f"Error linking accounts: {str(e)}")
 
 
-def unlink_accounts(lunchmoney_id: int):
+def unlink_accounts(lunchmoney_id: int, gocardless_id: str):
     try:
         data = read_links()
         data["links"] = [
-            link for link in data["links"] if link["lunchmoneyId"] != lunchmoney_id
+            link
+            for link in data["links"]
+            if not (
+                link["lunchmoneyId"] == lunchmoney_id
+                and link["gocardlessId"] == gocardless_id
+            )
         ]
         write_links(data)
         return True

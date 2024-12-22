@@ -38,12 +38,12 @@ export async function linkLunchmoneyAccount(lunchmoneyId: number, gocardlessId: 
     }
 }
 
-export async function unlinkLunchmoneyAccount(lunchmoneyId: number): Promise<void> {
+export async function unlinkLunchmoneyAccount(lunchmoneyId: number, gocardlessId: string): Promise<void> {
     try {
         const response = await fetch(`${API_CONFIG.baseUrl}/lunchmoney/unlink`, {
             method: 'POST',
             headers: API_CONFIG.headers,
-            body: JSON.stringify({lunchmoneyId}),
+            body: JSON.stringify({lunchmoneyId, gocardlessId}),
         });
 
         if (!response.ok) {

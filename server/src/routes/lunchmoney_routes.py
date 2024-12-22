@@ -11,6 +11,11 @@ class LinkAccountsRequest(BaseModel):
     gocardlessId: str
 
 
+class UnlinkAccountsRequest(BaseModel):
+    lunchmoneyId: int
+    gocardlessId: str
+
+
 @router.get("/assets")
 async def list_assets():
     assets = await get_assets()
@@ -24,6 +29,6 @@ async def link(request: LinkAccountsRequest):
 
 
 @router.post("/unlink")
-async def unlink(request: LinkAccountsRequest):
-    unlink_accounts(request.lunchmoneyId)
+async def unlink(request: UnlinkAccountsRequest):
+    unlink_accounts(request.lunchmoneyId, request.gocardlessId)
     return {"message": "Account unlinked successfully"}

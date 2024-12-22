@@ -9,7 +9,7 @@ interface AccountsTableProps {
     accounts: RequisitionDetails[];
     lunchmoneyAccounts: LunchmoneyAsset[];
     onLinkAccount: (gocardlessId: string, lunchmoneyId: number) => void;
-    onUnlinkAccount: (lunchmoneyId: number) => void;
+    onUnlinkAccount: (lunchmoneyId: number, gocardlessId: string) => void;
     isLoading?: boolean;
 }
 
@@ -23,6 +23,7 @@ export function AccountsTable({
     const [unlinkConfirm, setUnlinkConfirm] = useState<{
         lunchmoneyId: number;
         accountName: string;
+        gocardlessId: string;
     } | null>(null);
 
     if (isLoading) {
@@ -131,7 +132,8 @@ export function AccountsTable({
                                             <button
                                                 onClick={() => setUnlinkConfirm({
                                                     lunchmoneyId: linkedAccount.id,
-                                                    accountName: linkedAccount.name
+                                                    accountName: linkedAccount.name,
+                                                    gocardlessId: account.id
                                                 })}
                                                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                             >
@@ -161,7 +163,7 @@ export function AccountsTable({
                 confirmLabel="Unlink"
                 onConfirm={() => {
                     if (unlinkConfirm) {
-                        onUnlinkAccount(unlinkConfirm.lunchmoneyId);
+                        onUnlinkAccount(unlinkConfirm.lunchmoneyId, unlinkConfirm.gocardlessId);
                         setUnlinkConfirm(null);
                     }
                 }}

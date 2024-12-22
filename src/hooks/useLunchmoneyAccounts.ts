@@ -30,9 +30,9 @@ export function useLunchmoneyAccounts() {
     };
 
 
-    const handleUnlinkAccount = async (lunchmoneyId: number) => {
+    const handleUnlinkAccount = async (lunchmoneyId: number, gocardlessId: string) => {
         try {
-            await unlinkLunchmoneyAccount(lunchmoneyId);
+            await unlinkLunchmoneyAccount(lunchmoneyId, gocardlessId);
             await loadAccounts();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to unlink account');
