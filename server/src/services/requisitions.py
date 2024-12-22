@@ -18,7 +18,7 @@ async def get_requisitions():
         response.raise_for_status()
         data = response.json()
 
-        # Sort results by creation date
+        data["results"] = [item for item in data["results"] if item["status"] == "LN"]
         data["results"].sort(key=lambda x: datetime.fromisoformat(x["created"]))
         return data
 
