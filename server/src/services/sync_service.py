@@ -9,8 +9,8 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
-project_dir = Path(__file__).parents[2]
-load_dotenv(os.path.join(project_dir, ".env"))
+project_dir = Path(__file__).parents[3]
+load_dotenv()
 
 
 # Set up logging
@@ -25,9 +25,15 @@ logging.getLogger("httpx").setLevel(logging.INFO)
 # Configuration
 GOCARDLESS_API_URL = "https://bankaccountdata.gocardless.com/api/v2"
 GOCARDLESS_SECRET_ID = os.environ.get("GOCARDLESS_SECRET_ID")
+if not GOCARDLESS_SECRET_ID:
+    raise ValueError("GOCARDLESS_SECRET_ID is not set in the environment")
 GOCARDLESS_SECRET_KEY = os.environ.get("GOCARDLESS_SECRET_KEY")
+if not GOCARDLESS_SECRET_KEY:
+    raise ValueError("GOCARDLESS_SECRET_KEY is not set in the environment")
 LUNCHMONEY_API_URL = "https://dev.lunchmoney.app/v1"
 LUNCHMONEY_API_KEY = os.environ.get("LUNCHMONEY_ACCESS_TOKEN")
+if not LUNCHMONEY_API_KEY:
+    raise ValueError("LUNCHMONEY_ACCESS_TOKEN is not set in the environment")
 ACCOUNT_LINKS_FILE = Path(project_dir / "server" / "data" / "account-links.json")
 SYNC_STATUS_FILE = Path(project_dir / "server" / "data" / "sync-status.json")
 HTTP_REQUEST_TIMEOUT = 30
@@ -262,9 +268,6 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
                     "isSyncing": False,
                     "rateLimit": rate_limits,
                 }
-            )
-            logging.info(
-                f"Fetched {len(all_transactions)} transactions for account {link['gocardlessId']}"
             )
         except Exception as e:
             logger.error(f"Sync failed for account {account_id}: {str(e)}")
