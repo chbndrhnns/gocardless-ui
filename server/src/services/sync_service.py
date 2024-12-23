@@ -9,7 +9,7 @@ from pathlib import Path
 import httpx
 from dotenv import load_dotenv
 
-project_dir = Path(__file__).parents[3]
+project_dir = Path(__file__).parents[2]
 load_dotenv()
 
 
@@ -34,8 +34,10 @@ LUNCHMONEY_API_URL = "https://dev.lunchmoney.app/v1"
 LUNCHMONEY_API_KEY = os.environ.get("LUNCHMONEY_ACCESS_TOKEN")
 if not LUNCHMONEY_API_KEY:
     raise ValueError("LUNCHMONEY_ACCESS_TOKEN is not set in the environment")
-ACCOUNT_LINKS_FILE = Path(project_dir / "server" / "data" / "account-links.json")
-SYNC_STATUS_FILE = Path(project_dir / "server" / "data" / "sync-status.json")
+ACCOUNT_LINKS_FILE = Path(project_dir / "data" / "account-links.json")
+logger.debug("Reading account links from file: %s", ACCOUNT_LINKS_FILE)
+SYNC_STATUS_FILE = Path(project_dir / "data" / "sync-status.json")
+logger.debug("Reading account links from file: %s", ACCOUNT_LINKS_FILE)
 HTTP_REQUEST_TIMEOUT = 30
 DAYS_TO_SYNC = int(os.environ.get("DAYS_TO_SYNC", "14"))
 
