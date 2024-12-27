@@ -87,5 +87,5 @@ app.include_router(sync_routes.router, prefix="/api/sync", tags=["sync"])
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(os.getenv("BACKEND_PORT", 4000))
+    port = int(os.getenv("VITE_BACKEND_PORT", 4000))
     uvicorn.run(app, host="0.0.0.0", port=port)

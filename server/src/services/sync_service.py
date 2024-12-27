@@ -37,7 +37,7 @@ if not LUNCHMONEY_API_KEY:
 ACCOUNT_LINKS_FILE = Path(project_dir / "data" / "account-links.json")
 logger.debug("Reading account links from file: %s", ACCOUNT_LINKS_FILE)
 SYNC_STATUS_FILE = Path(project_dir / "data" / "sync-status.json")
-logger.debug("Reading account links from file: %s", ACCOUNT_LINKS_FILE)
+logger.debug("Reading sync status from file: %s", ACCOUNT_LINKS_FILE)
 HTTP_REQUEST_TIMEOUT = 30
 DAYS_TO_SYNC = int(os.environ.get("DAYS_TO_SYNC", "14"))
 
