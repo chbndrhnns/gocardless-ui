@@ -1,14 +1,15 @@
 """GoCardless API adapter implementation."""
 
 import asyncio
+import logging
 import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 import httpx
 
-from server.src.core.domain.models import TokenInfo, Institution, Requisition
-from server.src.core.ports.services import (
+from server.src.core.domain import TokenInfo, Institution, Requisition
+from server.src.core.ports import (
     GoCardlessService,
     TokenService,
     InstitutionService,
@@ -19,6 +20,8 @@ API_CONFIG = {
     "base_url": "https://bankaccountdata.gocardless.com/api/v2",
     "headers": {"Accept": "application/json", "Content-Type": "application/json"},
 }
+
+logger = logging.getLogger(__name__)
 
 
 class GoCardlessTokenAdapter(TokenService):
@@ -109,6 +112,7 @@ class GoCardlessApiAdapter(GoCardlessService):
     async def get_account_details(
         self, account_id: str, access_token: str
     ) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        # Get account details
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{API_CONFIG['base_url']}/accounts/{account_id}/",
@@ -119,7 +123,29 @@ class GoCardlessApiAdapter(GoCardlessService):
             )
             response.raise_for_status()
             rate_limits = await self._extract_rate_limits(response.headers)
-            return response.json(), rate_limits
+            account_details = response.json()
+
+            # Get balance details
+            balance_response = await client.get(
+                f"{API_CONFIG['base_url']}/accounts/{account_id}/balances/",
+                headers={
+                    **API_CONFIG["headers"],
+                    "Authorization": f"Bearer {access_token}",
+                },
+            )
+            balance_response.raise_for_status()
+            balance_data = balance_response.json()
+
+            if balance_data.get("balances"):
+                latest_balance = balance_data["balances"][0]
+                account_details["balance"] = latest_balance.get(
+                    "balanceAmount", {}
+                ).get("amount")
+                account_details["currency"] = latest_balance.get(
+                    "balanceAmount", {}
+                ).get("currency")
+
+            return account_details, rate_limits
 
     async def get_transactions(
         self,
