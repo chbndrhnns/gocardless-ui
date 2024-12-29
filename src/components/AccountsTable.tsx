@@ -49,6 +49,27 @@ export function AccountsTable({
         return lunchmoneyAccounts.filter(acc => !acc.linked_account);
     };
 
+    const sortAccounts = (accounts: RequisitionDetails[]) => {
+        const allAccounts = accounts.flatMap(requisition =>
+            requisition.accounts.map(account => ({
+                ...account,
+                requisitionId: requisition.id,
+                isLinked: !!getLinkedLunchmoneyAccount(account.id)
+            }))
+        );
+
+        return allAccounts.sort((a, b) => {
+            // First sort by linked status
+            if (a.isLinked !== b.isLinked) {
+                return a.isLinked ? -1 : 1;
+            }
+            // Then sort by IBAN
+            return (a.iban || '').localeCompare(b.iban || '');
+        });
+    };
+
+    const sortedAccounts = sortAccounts(accounts);
+
     return (
         <>
             <div className="overflow-x-auto">
@@ -74,102 +95,100 @@ export function AccountsTable({
                     </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                    {accounts.map(requisition => (
-                        requisition.accounts.map(account => {
-                            const linkedAccount = getLinkedLunchmoneyAccount(account.id);
-                            const unlinkedAccounts = getUnlinkedLunchmoneyAccounts();
+                    {sortedAccounts.map(account => {
+                        const linkedAccount = getLinkedLunchmoneyAccount(account.id);
+                        const unlinkedAccounts = getUnlinkedLunchmoneyAccounts();
 
-                            return (
-                                <tr key={account.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <Building2 className="h-5 w-5 text-gray-400 mr-3"/>
-                                            <div>
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {account.owner_name}
-                                                </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {account.iban}
-                                                </div>
+                        return (
+                            <tr key={account.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        <Building2 className="h-5 w-5 text-gray-400 mr-3"/>
+                                        <div>
+                                            <div className="text-sm font-medium text-gray-900">
+                                                {account.owner_name}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                {account.iban}
                                             </div>
                                         </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-gray-900">
-                                            Balance: {parseFloat(account.balance || '0').toLocaleString(undefined, {
-                                            style: 'currency',
-                                            currency: (account.currency || 'EUR').toUpperCase()
-                                        })}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            Last accessed: {format(new Date(account.last_accessed), 'MMM d, yyyy')}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {linkedAccount ? (
-                                            <div className="text-sm">
-                                                <p className="font-medium text-gray-900">{linkedAccount.name}</p>
-                                                <p className="text-gray-500">
-                                                    {parseFloat(linkedAccount.balance || '0').toLocaleString(undefined, {
-                                                        style: 'currency',
-                                                        currency: (linkedAccount.currency || 'EUR').toUpperCase()
-                                                    })}
-                                                </p>
-                                            </div>
-                                        ) : (
-                                            <select
-                                                onChange={(e) => {
-                                                    const lunchmoneyId = parseInt(e.target.value);
-                                                    if (lunchmoneyId) onLinkAccount(account.id, lunchmoneyId);
-                                                }}
-                                                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-                                                defaultValue=""
-                                            >
-                                                <option value="">Link to Lunch Money account...</option>
-                                                {unlinkedAccounts.map(lunchmoneyAcc => (
-                                                    <option key={lunchmoneyAcc.id} value={lunchmoneyAcc.id}>
-                                                        {lunchmoneyAcc.name} ({(lunchmoneyAcc.currency || 'EUR').toUpperCase()})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        {linkedAccount ? (
-                                            <button
-                                                onClick={() => setUnlinkConfirm({
-                                                    lunchmoneyId: linkedAccount.id,
-                                                    accountName: linkedAccount.name,
-                                                    gocardlessId: account.id
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">
+                                        Balance: {parseFloat(account.balance || '0').toLocaleString(undefined, {
+                                        style: 'currency',
+                                        currency: (account.currency || 'EUR').toUpperCase()
+                                    })}
+                                    </div>
+                                    <div className="text-sm text-gray-500">
+                                        Last accessed: {format(new Date(account.last_accessed), 'MMM d, yyyy')}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {linkedAccount ? (
+                                        <div className="text-sm">
+                                            <p className="font-medium text-gray-900">{linkedAccount.name}</p>
+                                            <p className="text-gray-500">
+                                                {parseFloat(linkedAccount.balance || '0').toLocaleString(undefined, {
+                                                    style: 'currency',
+                                                    currency: (linkedAccount.currency || 'EUR').toUpperCase()
                                                 })}
-                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                            >
-                                                <Unlink className="h-3 w-3 mr-1"/>
-                                                Unlink
-                                            </button>
-                                        ) : (<div className="space-x-2">
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <select
+                                            onChange={(e) => {
+                                                const lunchmoneyId = parseInt(e.target.value);
+                                                if (lunchmoneyId) onLinkAccount(account.id, lunchmoneyId);
+                                            }}
+                                            className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                                            defaultValue=""
+                                        >
+                                            <option value="">Link to Lunch Money account...</option>
+                                            {unlinkedAccounts.map(lunchmoneyAcc => (
+                                                <option key={lunchmoneyAcc.id} value={lunchmoneyAcc.id}>
+                                                    {lunchmoneyAcc.name} ({(lunchmoneyAcc.currency || 'EUR').toUpperCase()})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    {linkedAccount ? (
+                                        <button
+                                            onClick={() => setUnlinkConfirm({
+                                                lunchmoneyId: linkedAccount.id,
+                                                accountName: linkedAccount.name,
+                                                gocardlessId: account.id
+                                            })}
+                                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        >
+                                            <Unlink className="h-3 w-3 mr-1"/>
+                                            Unlink
+                                        </button>
+                                    ) : (<div className="space-x-2">
                                             <span
                                                 className="inline-flex items-center px-3 py-1.5 text-xs text-gray-500">
                                                 <LinkIcon className="h-3 w-3 mr-1"/>
                                                 Not Linked
                                             </span>
-                                                <button
-                                                    onClick={() => setDeleteConfirm({
-                                                        requisitionId: requisition.id,
-                                                        accountName: account.owner_name
-                                                    })}
-                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                                >
-                                                    <Trash2 className="h-3 w-3 mr-1"/>
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            );
-                        })
-                    ))}
+                                            <button
+                                                onClick={() => setDeleteConfirm({
+                                                    requisitionId: account.requisitionId,
+                                                    accountName: account.owner_name
+                                                })}
+                                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                            >
+                                                <Trash2 className="h-3 w-3 mr-1"/>
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
                     </tbody>
                 </table>
             </div>
