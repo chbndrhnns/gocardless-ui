@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {Building2, Link as LinkIcon, Loader2, Unlink} from 'lucide-react';
+import {Building2, Link as LinkIcon, Loader2, Trash2, Unlink} from 'lucide-react';
 import {format} from 'date-fns';
 import type {RequisitionDetails} from '../types/gocardless';
 import type {LunchmoneyAsset} from '../types/lunchmoney';
@@ -9,6 +9,7 @@ interface AccountsTableProps {
     accounts: RequisitionDetails[];
     lunchmoneyAccounts: LunchmoneyAsset[];
     onLinkAccount: (gocardlessId: string, lunchmoneyId: number) => void;
+    onDeleteAccount: (requisitionId: string) => void;
     onUnlinkAccount: (lunchmoneyId: number, gocardlessId: string) => void;
     isLoading?: boolean;
 }
@@ -17,6 +18,7 @@ export function AccountsTable({
                                   accounts,
                                   lunchmoneyAccounts,
                                   onLinkAccount,
+                                  onDeleteAccount,
                                   onUnlinkAccount,
                                   isLoading = false
                               }: AccountsTableProps) {
@@ -24,6 +26,11 @@ export function AccountsTable({
         lunchmoneyId: number;
         accountName: string;
         gocardlessId: string;
+    } | null>(null);
+
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        requisitionId: string;
+        accountName: string;
     } | null>(null);
 
     if (isLoading) {
@@ -140,12 +147,23 @@ export function AccountsTable({
                                                 <Unlink className="h-3 w-3 mr-1"/>
                                                 Unlink
                                             </button>
-                                        ) : (
+                                        ) : (<div className="space-x-2">
                                             <span
                                                 className="inline-flex items-center px-3 py-1.5 text-xs text-gray-500">
-                          <LinkIcon className="h-3 w-3 mr-1"/>
-                          Not Linked
-                        </span>
+                                                <LinkIcon className="h-3 w-3 mr-1"/>
+                                                Not Linked
+                                            </span>
+                                                <button
+                                                    onClick={() => setDeleteConfirm({
+                                                        requisitionId: requisition.id,
+                                                        accountName: account.owner_name
+                                                    })}
+                                                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                >
+                                                    <Trash2 className="h-3 w-3 mr-1"/>
+                                                    Delete
+                                                </button>
+                                            </div>
                                         )}
                                     </td>
                                 </tr>
@@ -168,6 +186,20 @@ export function AccountsTable({
                     }
                 }}
                 onCancel={() => setUnlinkConfirm(null)}
+            />
+
+            <ConfirmDialog
+                isOpen={!!deleteConfirm}
+                title="Delete Account"
+                message={`Are you sure you want to delete "${deleteConfirm?.accountName}"? This action cannot be undone.`}
+                confirmLabel="Delete"
+                onConfirm={() => {
+                    if (deleteConfirm) {
+                        onDeleteAccount(deleteConfirm.requisitionId);
+                        setDeleteConfirm(null);
+                    }
+                }}
+                onCancel={() => setDeleteConfirm(null)}
             />
         </>
     );

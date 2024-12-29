@@ -14,6 +14,7 @@ export function SettingsView() {
     const {
         requisitions,
         requisitionDetails,
+        handleDeleteRequisition,
         isLoading: isLoadingRequisitions,
         error: requisitionsError,
     } = useRequisitions();
@@ -78,6 +79,7 @@ export function SettingsView() {
                         accounts={Object.values(requisitionDetails)}
                         lunchmoneyAccounts={lunchmoneyAccounts}
                         onLinkAccount={handleLinkAccounts}
+                        onDeleteAccount={handleDeleteRequisition}
                         onUnlinkAccount={handleUnlinkAccount}
                         isLoading={isLoadingRequisitions || isLoadingLunchmoney}
                     />
