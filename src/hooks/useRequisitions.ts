@@ -1,14 +1,28 @@
 import {useEffect, useState} from 'react';
 import {createRequisition, deleteRequisition, fetchRequisitionDetails, fetchRequisitions} from '../services/api';
-import type {Requisition, RequisitionDetails} from '../types/gocardless';
+import {useStore} from '../store/store';
+import {Requisition} from "../types/gocardless.ts";
 
 export function useRequisitions() {
-    const [requisitions, setRequisitions] = useState<Requisition[]>([]);
-    const [requisitionDetails, setRequisitionDetails] = useState<Record<string, RequisitionDetails>>({});
+    const {
+        requisitions,
+        requisitionDetails,
+        setRequisitions,
+        setRequisitionDetails
+    } = useStore();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isDeletingRequisition, setIsDeletingRequisition] = useState<string | null>(null);
     const [isCreatingRequisition, setIsCreatingRequisition] = useState(false);
+
+    // Only load data if we don't have any requisitions yet
+    useEffect(() => {
+        if (requisitions.length === 0) {
+            refresh();
+        } else {
+            setIsLoading(false);
+        }
+    }, [requisitions.length]);
 
     const refresh = async () => {
         setIsLoading(true);
@@ -21,7 +35,7 @@ export function useRequisitions() {
             );
             setRequisitions(sortedRequisitions);
 
-            sortedRequisitions.forEach(req => {
+            sortedRequisitions.forEach((req) => {
                 loadRequisitionDetails(req.id);
             });
         } catch (err) {
@@ -34,10 +48,7 @@ export function useRequisitions() {
     const loadRequisitionDetails = async (requisitionId: string) => {
         try {
             const details = await fetchRequisitionDetails(requisitionId);
-            setRequisitionDetails(prev => ({
-                ...prev,
-                [requisitionId]: details
-            }));
+            setRequisitionDetails(requisitionId, details);
         } catch (error) {
             console.error(`Error loading details for requisition ${requisitionId}:`, error);
         }
@@ -51,12 +62,10 @@ export function useRequisitions() {
         setIsDeletingRequisition(id);
         try {
             await deleteRequisition(id);
-            setRequisitions(prev => prev.filter(req => req.id !== id));
-            setRequisitionDetails(prev => {
-                const updated = {...prev};
-                delete updated[id];
-                return updated;
-            });
+            setRequisitions(requisitions.filter((req: Requisition) => req.id !== id));
+            const updatedDetails = {...requisitionDetails};
+            delete updatedDetails[id];
+            setRequisitionDetails(id, updatedDetails[id]);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to delete bank connection');
         } finally {
@@ -73,7 +82,7 @@ export function useRequisitions() {
         setIsCreatingRequisition(true);
         try {
             const requisition = await createRequisition(params);
-            setRequisitions(prev => [requisition, ...prev]);
+            setRequisitions([requisition, ...requisitions]);
             if (requisition.link) {
                 window.location.href = requisition.link;
             }
@@ -83,10 +92,6 @@ export function useRequisitions() {
             setIsCreatingRequisition(false);
         }
     };
-
-    useEffect(() => {
-        refresh();
-    }, []);
 
     return {
         requisitions,

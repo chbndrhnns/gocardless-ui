@@ -25,7 +25,7 @@ export function SettingsView() {
         isLoading: isLoadingInstitutions,
         error: institutionsError,
         loadInstitutions,
-    } = useInstitutions();
+    } = useInstitutions(selectedCountry);
 
     const {
         accounts: lunchmoneyAccounts,
@@ -43,12 +43,11 @@ export function SettingsView() {
 
     const handleCountryChange = (country: string) => {
         setSelectedCountry(country);
-        loadInstitutions(country);
     };
 
     const handleOpenDialog = () => {
         setIsDialogOpen(true);
-        loadInstitutions(selectedCountry);
+        loadInstitutions();
     };
 
     const handleRefresh = async () => {

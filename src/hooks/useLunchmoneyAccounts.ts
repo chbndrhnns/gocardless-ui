@@ -1,17 +1,26 @@
 import {useEffect, useState} from 'react';
 import {fetchLunchmoneyAssets, linkLunchmoneyAccount, unlinkLunchmoneyAccount} from '../services/lunchmoney';
-import type {LunchmoneyAsset} from '../types/lunchmoney';
+import {useStore} from '../store/store';
 
 export function useLunchmoneyAccounts() {
-    const [accounts, setAccounts] = useState<LunchmoneyAsset[]>([]);
+    const {lunchmoneyAssets, setLunchmoneyAssets} = useStore();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Only load data if we don't have any assets yet
+    useEffect(() => {
+        if (lunchmoneyAssets.length === 0) {
+            refresh();
+        } else {
+            setIsLoading(false);
+        }
+    }, [lunchmoneyAssets.length]);
 
     const refresh = async () => {
         setIsLoading(true);
         try {
             const data = await fetchLunchmoneyAssets();
-            setAccounts(data);
+            setLunchmoneyAssets(data);
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load Lunchmoney accounts');
@@ -38,12 +47,8 @@ export function useLunchmoneyAccounts() {
         }
     };
 
-    useEffect(() => {
-        refresh();
-    }, []);
-
     return {
-        accounts,
+        accounts: lunchmoneyAssets,
         isLoading,
         error,
         refresh,
