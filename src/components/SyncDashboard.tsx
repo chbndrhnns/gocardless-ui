@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {AlertCircle, AlertTriangle, CheckCircle, Info, Loader2, Play, RefreshCw} from 'lucide-react';
+import {AlertCircle, AlertTriangle, CheckCircle, Info, Loader2, Play, RefreshCw, ShieldAlert} from 'lucide-react';
 import {format, formatDistance, formatDistanceToNow} from 'date-fns';
 import type {SyncStatus} from '../types/sync';
 import {API_CONFIG} from "../config/api";
@@ -81,8 +81,45 @@ export function SyncDashboard() {
         );
     }
 
+    const accountsNeedingAttention = syncStatus.filter(account =>
+        account.lastSyncStatus === 'error' ||
+        (account.rateLimit.remaining === 0 && new Date(account.rateLimit.reset) > new Date())
+    );
+
     return (
         <div className="space-y-6">
+            {accountsNeedingAttention.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg overflow-hidden">
+                    <div className="p-4 border-b border-amber-200 flex items-center space-x-2">
+                        <ShieldAlert className="h-5 w-5 text-amber-600"/>
+                        <h2 className="text-lg font-semibold text-amber-900">Accounts Needing Attention</h2>
+                    </div>
+                    <div className="divide-y divide-amber-200">
+                        {accountsNeedingAttention.map(account => (
+                            <div key={account.gocardlessId} className="p-4 flex items-center justify-between">
+                                <div>
+                                    <div className="font-medium text-amber-900">{account.gocardlessName}</div>
+                                    <div className="text-sm text-amber-700 space-y-1">
+                                        <div>{account.institutionName}</div>
+                                        {account.lastSyncStatus === 'error' ? (
+                                            'Last sync failed - may need reauthorization'
+                                        ) : (
+                                            `Rate limited until ${format(new Date(account.rateLimit.reset), 'HH:mm')}`
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => window.location.href = '/settings'}
+                                    className="px-3 py-1.5 text-sm font-medium text-amber-700 hover:text-amber-800 hover:bg-amber-100 rounded-md"
+                                >
+                                    Review
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4 sm:p-6 border-b border-gray-200 space-y-2">
                     <div className="flex justify-between items-center">
@@ -155,8 +192,9 @@ export function SyncDashboard() {
                                             <div className="text-sm font-medium text-gray-900">
                                                 {account.gocardlessName}
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {account.lunchmoneyName}
+                                            <div className="flex flex-col text-sm text-gray-500">
+                                                <span>{account.institutionName}</span>
+                                                <span>{account.lunchmoneyName}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -264,5 +302,3 @@ export function SyncDashboard() {
         </div>
     );
 }
-
-1

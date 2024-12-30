@@ -7,6 +7,7 @@ export interface RateLimit {
 export interface SyncStatus {
     gocardlessId: string;
     gocardlessName: string;
+    institutionName: string;
     lunchmoneyName: string;
     lastSync: string | null;
     nextSync: string;
