@@ -7,16 +7,7 @@ export function useLunchmoneyAccounts() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const handleLinkAccounts = async (gocardlessId: string, lunchmoneyId: number) => {
-        try {
-            await linkLunchmoneyAccount(lunchmoneyId, gocardlessId);
-            await loadAccounts();
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to link accounts');
-        }
-    };
-
-    const loadAccounts = async () => {
+    const refresh = async () => {
         setIsLoading(true);
         try {
             const data = await fetchLunchmoneyAssets();
@@ -29,24 +20,33 @@ export function useLunchmoneyAccounts() {
         }
     };
 
+    const handleLinkAccounts = async (gocardlessId: string, lunchmoneyId: number) => {
+        try {
+            await linkLunchmoneyAccount(lunchmoneyId, gocardlessId);
+            await refresh();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to link accounts');
+        }
+    };
 
     const handleUnlinkAccount = async (lunchmoneyId: number, gocardlessId: string) => {
         try {
             await unlinkLunchmoneyAccount(lunchmoneyId, gocardlessId);
-            await loadAccounts();
+            await refresh();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to unlink account');
         }
     };
 
     useEffect(() => {
-        loadAccounts();
+        refresh();
     }, []);
 
     return {
         accounts,
         isLoading,
         error,
+        refresh,
         handleLinkAccounts,
         handleUnlinkAccount,
     };

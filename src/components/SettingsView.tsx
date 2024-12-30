@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {PlusCircle} from 'lucide-react';
+import {PlusCircle, RefreshCw} from 'lucide-react';
 import {AddBankDialog} from './AddBankDialog';
 import {AccountsTable} from './AccountsTable';
 import {useRequisitions} from '../hooks/useRequisitions';
@@ -14,6 +14,7 @@ export function SettingsView() {
     const {
         requisitions,
         requisitionDetails,
+        refresh: refreshRequisitions,
         handleDeleteRequisition,
         isLoading: isLoadingRequisitions,
         error: requisitionsError,
@@ -29,6 +30,7 @@ export function SettingsView() {
     const {
         accounts: lunchmoneyAccounts,
         isLoading: isLoadingLunchmoney,
+        refresh: refreshLunchmoneyAccounts,
         handleLinkAccounts,
         handleUnlinkAccount,
     } = useLunchmoneyAccounts();
@@ -48,6 +50,14 @@ export function SettingsView() {
         setIsDialogOpen(true);
         loadInstitutions(selectedCountry);
     };
+
+    const handleRefresh = async () => {
+        await Promise.all([
+            refreshRequisitions(),
+            refreshLunchmoneyAccounts()
+        ]);
+    };
+
     requisitions.filter(req => req.status === 'CR' || req.status === 'LN');
     requisitions.filter(req => req.status !== 'CR' && req.status !== 'LN');
 
@@ -61,13 +71,24 @@ export function SettingsView() {
                             Manage your connected bank accounts
                         </p>
                     </div>
-                    <button
-                        onClick={handleOpenDialog}
-                        className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                        <PlusCircle className="h-4 w-4 mr-2"/>
-                        New Connection
-                    </button>
+                    <div className="flex space-x-4">
+                        <button
+                            onClick={handleRefresh}
+                            disabled={isLoadingRequisitions || isLoadingLunchmoney}
+                            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                        >
+                            <RefreshCw
+                                className={`h-4 w-4 mr-2 ${(isLoadingRequisitions || isLoadingLunchmoney) ? 'animate-spin' : ''}`}/>
+                            Refresh
+                        </button>
+                        <button
+                            onClick={handleOpenDialog}
+                            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                            <PlusCircle className="h-4 w-4 mr-2"/>
+                            New Connection
+                        </button>
+                    </div>
                 </div>
 
                 {requisitionsError ? (

@@ -10,7 +10,7 @@ export function useRequisitions() {
     const [isDeletingRequisition, setIsDeletingRequisition] = useState<string | null>(null);
     const [isCreatingRequisition, setIsCreatingRequisition] = useState(false);
 
-    const loadRequisitions = async () => {
+    const refresh = async () => {
         setIsLoading(true);
         setError(null);
 
@@ -85,7 +85,7 @@ export function useRequisitions() {
     };
 
     useEffect(() => {
-        loadRequisitions();
+        refresh();
     }, []);
 
     return {
@@ -93,6 +93,7 @@ export function useRequisitions() {
         requisitionDetails,
         isLoading,
         error,
+        refresh,
         handleLinkClick,
         handleDeleteRequisition,
         isDeletingRequisition,
