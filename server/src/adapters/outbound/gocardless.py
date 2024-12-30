@@ -120,8 +120,8 @@ class GoCardlessApiAdapter(GoCardlessService):
                     "Authorization": f"Bearer {access_token}",
                 },
             )
-            response.raise_for_status()
             rate_limits = await self._extract_rate_limits(response.headers)
+            response.raise_for_status()
             account_details = response.json()
 
             balance_response = await client.get(
