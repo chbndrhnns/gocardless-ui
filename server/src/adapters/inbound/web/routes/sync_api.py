@@ -71,7 +71,7 @@ async def get_sync_status(
                 ),
                 "lastSync": status.last_sync,
                 "lastSyncStatus": status.last_sync_status,
-                "lastS yncTransactions": status.last_sync_transactions,
+                "lastSyncTransactions": status.last_sync_transactions,
                 "isSyncing": status.is_syncing,
                 "rateLimit": {
                     "limit": status.rate_limit.limit if status.rate_limit else -1,
