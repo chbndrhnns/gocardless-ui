@@ -26,8 +26,6 @@ export interface BankAccount {
     institution_id: string;
     status: string;
     owner_name: string;
-    balance: string;
-    currency: string;
 }
 
 export interface RequisitionDetails extends Requisition {

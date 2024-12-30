@@ -115,12 +115,6 @@ export function AccountsTable({
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm text-gray-900">
-                                        Balance: {parseFloat(account.balance || '0').toLocaleString(undefined, {
-                                        style: 'currency',
-                                        currency: (account.currency || 'EUR').toUpperCase()
-                                    })}
-                                    </div>
                                     <div className="text-sm text-gray-500">
                                         Last accessed: {format(new Date(account.last_accessed), 'MMM d, yyyy')}
                                     </div>

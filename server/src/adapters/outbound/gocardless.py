@@ -123,31 +123,6 @@ class GoCardlessApiAdapter(GoCardlessService):
             rate_limits = await self._extract_rate_limits(response.headers)
             response.raise_for_status()
             account_details = response.json()
-
-            balance_response = await client.get(
-                f"{API_CONFIG['base_url']}/accounts/{account_id}/balances/",
-                headers={
-                    **API_CONFIG["headers"],
-                    "Authorization": f"Bearer {access_token}",
-                },
-            )
-
-            if balance_response.status_code == 429:
-                # Return dummy values for balance if rate limited
-                account_details["balance"] = "0.00"
-                account_details["currency"] = "EUR"
-            else:
-                balance_response.raise_for_status()
-                balance_data = balance_response.json()
-                if balance_data.get("balances"):
-                    latest_balance = balance_data["balances"][0]
-                    account_details["balance"] = latest_balance.get(
-                        "balanceAmount", {}
-                    ).get("amount")
-                    account_details["currency"] = latest_balance.get(
-                        "balanceAmount", {}
-                    ).get("currency")
-
             return account_details, rate_limits
 
     async def get_transactions(
