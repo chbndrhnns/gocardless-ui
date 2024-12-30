@@ -213,7 +213,7 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
 
     for link in account_links:
         account_id = link["gocardlessId"]
-        logging.info(f"Fetching transactions for account {account_id}")
+        logger.info(f"Fetching transactions for account {account_id}")
         from_date = (
             (
                 datetime.fromisoformat(link.get("lastSync", now.isoformat()))
@@ -254,11 +254,11 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
                 all_transactions.extend(transformed_transactions)
             try:
                 result = await send_transactions_to_lunchmoney(all_transactions)
-                logging.info(
-                    f"Synced {len(all_transactions)} transactions for account {link['gocardlessId']}. Lunch Money response: {result}"
+                logger.info(
+                    f"Synced {len(result)} transactions for account {link['gocardlessId']}. Lunch Money response: {result}"
                 )
             except Exception as e:
-                logging.error(
+                logger.exception(
                     f"Error sending transactions to Lunch Money for account {link['gocardlessId']}: {str(e)}"
                 )
             # Update sync status with the calculated rate limits
@@ -313,6 +313,9 @@ async def get_gocardless_transactions(
 
 async def send_transactions_to_lunchmoney(transactions):
     """Send new transactions to Lunch Money."""
+    if not transactions:
+        return []
+
     # Determine start_date and end_date from transaction batch
     dates = [tx["date"] for tx in transactions]
     start_date = min(dates or datetime.now())
@@ -323,11 +326,13 @@ async def send_transactions_to_lunchmoney(transactions):
         transactions[0]["asset_id"], start_date, end_date
     )
     existing_ids = {tx["external_id"] for tx in existing_transactions}
+    logger.debug(f"Existing transactions: {existing_transactions}")
 
     # Filter out transactions where external_id matches
     new_transactions = [
         tx for tx in transactions if tx["external_id"] not in existing_ids
     ]
+    logger.debug(f"New transactions to send: {new_transactions}")
 
     if not new_transactions:
         logger.info("No new transactions to send to Lunch Money.")
@@ -344,6 +349,7 @@ async def fetch_existing_transactions(asset_id, start_date, end_date):
 
     response = httpx.get(url, headers=headers, params=params)
     response.raise_for_status()
+    logger.debug(f"Received existing transactions: {response.json()}")
     return response.json().get("transactions", [])
 
 
