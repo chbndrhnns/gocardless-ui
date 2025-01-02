@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone, timedelta
 from functools import lru_cache
 from http import HTTPStatus
@@ -395,7 +396,7 @@ async def transform_transaction(
         "amount": f"{float(gocardless_tx['transactionAmount']['amount']):.2f}",
         "currency": (gocardless_tx["transactionAmount"]["currency"]).lower(),
         "payee": payee.strip(),
-        "notes": notes.strip(),
+        "notes": re.sub(r"\s+", " ", notes).strip(),
         "asset_id": lunchmoney_account_id,
         "external_id": gocardless_tx["internalTransactionId"],
         "status": "uncleared",
