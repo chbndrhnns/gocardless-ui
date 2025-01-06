@@ -201,7 +201,9 @@ async def fetch_all_lunchmoney_accounts():
     return {account["id"]: account["name"] for account in accounts}
 
 
-async def sync_transactions(token_storage: TokenStorage, account_id=None):
+async def sync_transactions(
+    token_storage: TokenStorage, account_id=None, *, days_to_sync=DAYS_TO_SYNC
+):
     if account_id:
         logger.info(f"Syncing transactions for account {account_id}")
     else:
@@ -218,7 +220,7 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
         from_date = (
             (
                 datetime.fromisoformat(link.get("lastSync", now.isoformat()))
-                - timedelta(days=DAYS_TO_SYNC)
+                - timedelta(days=days_to_sync or DAYS_TO_SYNC)
             )
             .date()
             .isoformat()
@@ -341,9 +343,12 @@ async def send_transactions_to_lunchmoney(transactions):
         return []
 
     # Determine start_date and end_date from transaction batch
-    dates = [tx["date"] for tx in transactions]
-    start_date = min(dates or datetime.now() - timedelta(days=1))
-    end_date = max(dates or datetime.now())
+    dates: list[str] = [tx["date"] for tx in transactions]
+    start_date = min(dates or [datetime.now().date().isoformat()])
+    end_date = max(dates or [datetime.now().date().isoformat()])
+
+    if start_date == end_date:
+        end_date = datetime.fromisoformat(end_date) + timedelta(days=1)
 
     # Fetch existing transactions
     existing_transactions = await fetch_existing_transactions(
