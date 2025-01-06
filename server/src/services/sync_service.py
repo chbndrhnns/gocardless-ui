@@ -248,9 +248,32 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
                 "booked",
                 # "pending",
             ]:
+                # Step 1: Group transactions by transactionId
+                grouped_transactions = {}
+                for tx in gocardless_data.get(tx_type, []):
+                    grouped_transactions.setdefault(tx["transactionId"], []).append(tx)
+
+                # Step 2: Filter each group
+                transactions = []
+                for transactionId, transactions in grouped_transactions.items():
+                    # Check if any transaction has 'entryReference' matching 'transactionId'
+                    match = next(
+                        (
+                            tx
+                            for tx in transactions
+                            if tx.get("entryReference") == transactionId
+                        ),
+                        None,
+                    )
+                    if match:
+                        transactions.append(match)
+                    else:
+                        # If no match, just pick the first transaction from the group
+                        transactions.append(transactions[0])
+
                 transformed_transactions = [
                     await transform_transaction(tx, link["lunchmoneyId"])
-                    for tx in gocardless_data.get(tx_type, [])
+                    for tx in transactions
                 ]
                 all_transactions.extend(transformed_transactions)
             try:
@@ -258,20 +281,20 @@ async def sync_transactions(token_storage: TokenStorage, account_id=None):
                 logger.info(
                     f"Synced {len(result)} transactions for account {link['gocardlessId']}. Lunch Money response: {result}"
                 )
+                # Update sync status with the calculated rate limits
+                sync_status[account_id].update(
+                    {
+                        "lastSync": datetime.now(timezone.utc).isoformat(),
+                        "lastSyncStatus": "success",
+                        "lastSyncTransactions": len(result),
+                        "isSyncing": False,
+                        "rateLimit": rate_limits,
+                    }
+                )
             except Exception as e:
                 logger.exception(
                     f"Error sending transactions to Lunch Money for account {link['gocardlessId']}: {str(e)}"
                 )
-            # Update sync status with the calculated rate limits
-            sync_status[account_id].update(
-                {
-                    "lastSync": datetime.now(timezone.utc).isoformat(),
-                    "lastSyncStatus": "success",
-                    "lastSyncTransactions": len(result),
-                    "isSyncing": False,
-                    "rateLimit": rate_limits,
-                }
-            )
         except Exception as e:
             logger.error(f"Sync failed for account {account_id}: {str(e)}")
             sync_status[account_id].update(
@@ -319,7 +342,7 @@ async def send_transactions_to_lunchmoney(transactions):
 
     # Determine start_date and end_date from transaction batch
     dates = [tx["date"] for tx in transactions]
-    start_date = min(dates or datetime.now())
+    start_date = min(dates or datetime.now() - timedelta(days=1))
     end_date = max(dates or datetime.now())
 
     # Fetch existing transactions
