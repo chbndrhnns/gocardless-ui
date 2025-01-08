@@ -202,12 +202,19 @@ async def fetch_all_lunchmoney_accounts():
 
 
 async def sync_transactions(
-    token_storage: TokenStorage, account_id=None, *, days_to_sync=DAYS_TO_SYNC
+    token_storage: TokenStorage,
+    account_id=None,
+    *,
+    days_to_sync=DAYS_TO_SYNC,
+    tx_data=None,
 ):
     if account_id:
         logger.info(f"Syncing transactions for account {account_id}")
     else:
         logger.info(f"Syncing transactions all accounts")
+
+    if tx_data and not account_id:
+        raise ValueError("account_id must be provided when tx_data is provided")
 
     account_links = await load_account_links(account_id)
     sync_status = await load_sync_status()
@@ -217,14 +224,8 @@ async def sync_transactions(
     for link in account_links:
         account_id = link["gocardlessId"]
         logger.info(f"Fetching transactions for account {account_id}")
-        from_date = (
-            (
-                datetime.fromisoformat(link.get("lastSync", now.isoformat()))
-                - timedelta(days=days_to_sync or DAYS_TO_SYNC)
-            )
-            .date()
-            .isoformat()
-        )
+        last_sync_date = link.get("lastSync", now.isoformat())
+
         # Update sync status
         if account_id not in sync_status:
             sync_status[account_id] = {}
@@ -233,9 +234,14 @@ async def sync_transactions(
         await save_sync_status(sync_status)
 
         try:
-            gocardless_data, rate_limits = await get_gocardless_transactions(
-                link["gocardlessId"], access_token, from_date
-            )
+            if tx_data:
+                gocardless_data, rate_limits = tx_data, None
+            else:
+                gocardless_data, rate_limits = await get_gocardless_transactions(
+                    link["gocardlessId"],
+                    access_token=access_token,
+                    last_sync_date=last_sync_date,
+                )
 
             # Check and adjust rate limits
             if rate_limits:
@@ -250,34 +256,12 @@ async def sync_transactions(
                 "booked",
                 # "pending",
             ]:
-                # Step 1: Group transactions by transactionId
-                grouped_transactions = {}
-                for tx in gocardless_data.get(tx_type, []):
-                    grouped_transactions.setdefault(tx["transactionId"], []).append(tx)
+                filtered = filter_duplicates(gocardless_data, tx_type)
 
-                # Step 2: Filter each group
-                transactions = []
-                for transactionId, transactions in grouped_transactions.items():
-                    # Check if any transaction has 'entryReference' matching 'transactionId'
-                    match = next(
-                        (
-                            tx
-                            for tx in transactions
-                            if tx.get("entryReference") == transactionId
-                        ),
-                        None,
-                    )
-                    if match:
-                        transactions.append(match)
-                    else:
-                        # If no match, just pick the first transaction from the group
-                        transactions.append(transactions[0])
-
-                transformed_transactions = [
-                    await transform_transaction(tx, link["lunchmoneyId"])
-                    for tx in transactions
+                transformed = [
+                    transform_transaction(tx, link["lunchmoneyId"]) for tx in filtered
                 ]
-                all_transactions.extend(transformed_transactions)
+                all_transactions.extend(transformed)
             try:
                 result = await send_transactions_to_lunchmoney(all_transactions)
                 logger.info(
@@ -309,12 +293,36 @@ async def sync_transactions(
         await save_sync_status(sync_status)
 
 
+def filter_duplicates(gocardless_data, tx_type) -> list[dict]:
+    # Step 1: Group transactions by transactionId
+    grouped = {}
+    for tx in gocardless_data.get(tx_type, []):
+        grouped.setdefault(tx["transactionId"], []).append(tx)
+
+    # Step 2: Filter each group
+    result = []
+    for transactionId, transactions in grouped.items():
+        # Check if any transaction has 'entryReference' matching 'transactionId'
+        match = next(
+            (tx for tx in transactions if tx.get("entryReference") == transactionId),
+            None,
+        )
+        result.append(match or transactions[0])
+    return result
+
+
 async def get_gocardless_transactions(
-    account_id: str, access_token: str, from_date: str, to_date: str = None
+    account_id: str, *, access_token: str, last_sync_date, days_to_sync=DAYS_TO_SYNC
 ) -> tuple[dict, dict]:
+    from_date = (
+        (datetime.fromisoformat(last_sync_date) - timedelta(days=days_to_sync))
+        .date()
+        .isoformat()
+    )
+
     url = f"{GOCARDLESS_API_URL}/accounts/{account_id}/transactions/"
     headers = {"Authorization": f"Bearer {access_token}"}
-    params = {"date_from": from_date} | ({"date_to": to_date} if to_date else {})
+    params = {"date_from": from_date}
 
     response = httpx.get(url, headers=headers, params=params, follow_redirects=True)
     rate_limits = await extract_rate_limits(response.headers)
@@ -404,9 +412,7 @@ async def send_batch(transactions: list[dict]) -> list[dict]:
     return all_responses
 
 
-async def transform_transaction(
-    gocardless_tx: dict, lunchmoney_account_id: int
-) -> dict:
+def transform_transaction(gocardless_tx: dict, lunchmoney_account_id: int) -> dict:
     logger.debug(f"Transforming transaction: {gocardless_tx}")
     raw_notes = gocardless_tx.get("remittanceInformationUnstructured", "")
     notes = (
