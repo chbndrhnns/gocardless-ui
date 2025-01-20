@@ -403,6 +403,7 @@ async def send_batch(transactions: list[dict]) -> list[dict]:
             "transactions": batch,
             "check_for_recurring": True,
             "debit_as_negative": True,
+            "apply_rules": True,
         }
         logger.info(f"Sending {len(batch)} transactions to Lunch Money.")
         response = httpx.post(url, headers=headers, json=data)
