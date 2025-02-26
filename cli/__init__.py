@@ -1,0 +1,3 @@
+"""
+GoCardless CLI Manager package.
+"""
