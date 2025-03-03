@@ -362,7 +362,9 @@ async def send_transactions_to_lunchmoney(transactions):
     existing_transactions = await fetch_existing_transactions(
         transactions[0]["asset_id"], start_date, end_date
     )
-    existing_ids = {tx["external_id"] for tx in existing_transactions}
+    existing_ids = {
+        tx["external_id"] for tx in existing_transactions if tx["external_id"]
+    }
     logger.debug(f"Existing transactions: {existing_transactions}")
 
     # Filter out transactions where external_id matches
