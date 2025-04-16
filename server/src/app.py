@@ -39,7 +39,7 @@ async def schedule_sync(token_storage: TokenStorage):
         sync_transactions,
         args=(token_storage,),
         id="startup_sync_job",
-        trigger=CronTrigger(hour="*/5", jitter=120),
+        trigger=CronTrigger(hour="8-20/5", jitter=120),
         replace_existing=True,
     )
     return scheduler
