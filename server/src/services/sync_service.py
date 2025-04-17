@@ -35,10 +35,12 @@ LUNCHMONEY_API_URL = "https://dev.lunchmoney.app/v1"
 LUNCHMONEY_API_KEY = os.environ.get("LUNCHMONEY_ACCESS_TOKEN")
 if not LUNCHMONEY_API_KEY:
     raise ValueError("LUNCHMONEY_ACCESS_TOKEN is not set in the environment")
-ACCOUNT_LINKS_FILE = Path(project_dir / "data" / "account-links.json")
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+logger.debug("Using data directory: %s", DATA_DIR)
+ACCOUNT_LINKS_FILE = Path(project_dir / DATA_DIR / "account-links.json")
 logger.debug("Reading account links from file: %s", ACCOUNT_LINKS_FILE)
-SYNC_STATUS_FILE = Path(project_dir / "data" / "sync-status.json")
-logger.debug("Reading account links from file: %s", ACCOUNT_LINKS_FILE)
+SYNC_STATUS_FILE = Path(project_dir / DATA_DIR / "sync-status.json")
+logger.debug("Reading sync status from file: %s", SYNC_STATUS_FILE)
 HTTP_REQUEST_TIMEOUT = 30
 DAYS_TO_SYNC = int(os.environ.get("DAYS_TO_SYNC", "14"))
 

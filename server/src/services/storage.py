@@ -1,9 +1,13 @@
 import json
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 project_dir = Path(__file__).parents[2]
+load_dotenv()
 
-LINKS_FILE = Path(project_dir / "data" / "account-links.json")
+DATA_DIR = os.environ.get("DATA_DIR", "data")
+LINKS_FILE = Path(project_dir / DATA_DIR / "account-links.json")
 
 
 def read_links():
